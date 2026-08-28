@@ -1,0 +1,225 @@
+# Méthodes de calcul et sources
+
+Ce document trace l'origine de chaque valeur et de chaque formule utilisée par la calculette. Règle du projet : aucune valeur sans source identifiée. Les niveaux de confiance indiqués sont : haute (document institutionnel consulté directement), moyenne (valeur de seconde main concordante entre plusieurs sources), faible (source unique ou non institutionnelle, à faire valider).
+
+## Sources principales
+
+- [G1] ADEME/COSTIC, "Les besoins d'eau chaude sanitaire en habitat individuel et collectif", guide technique réf. 8809, mai 2016. https://www.precarite-energie.org/IMG/pdf/besoin-eau-chaude-sanitaire-habitat-individuel-et-collectif-8809.pdf (aussi sur costic.com et ademe.fr)
+- [G2] COSTIC sous l'égide de GRDF et de l'ADEME, "Vers une meilleure connaissance des besoins d'eau chaude sanitaire en tertiaire", septembre 2020. https://www.mapes-pdl.fr/wp-content/uploads/2020/10/ECS-ADEME-COSTIC-Besoins-ECS-tertiaire.pdf
+- [G3] SOCOL (Enerplan, avec ADEME, GRDF, INES, TECSOL), "Fiche technique : ratios des besoins en ECS pour le dimensionnement des installations en solaire thermique collectif", 2021. https://www.solaire-collectif.fr/photo/img/2021/OUTILS/210209_Fiche-ratios-de-dimensionnement_21_VF.pdf (fourchettes volontairement basses, pensées pour le solaire)
+- [G4] Energie+ (UCLouvain, Belgique), "Consommation d'eau chaude sanitaire". https://energieplus-lesite.be/donnees/consommations2/consommation-d-eau-chaude-sanitaire/ (valeurs belges, confiance moyenne, utilisées en recoupement seulement)
+
+## 0. Conversions et constantes
+
+- Capacité thermique volumique de l'eau : c = 1,163 Wh/(L.K).
+- Conversion d'un volume entre températures de référence (équivalence énergétique), [G1] p. 23 : V(T2) = V(T1) x (T1 - Tef) / (T2 - Tef), avec Tef la température d'eau froide.
+- Températures d'eau froide mesurées sur 100 sites ([G1]) : 16 °C en moyenne annuelle (plus ou moins 2), 21 °C en juillet-août (plus ou moins 3), 9 °C en moyenne au minimum hivernal. La valeur 9 °C sert au dimensionnement de pointe.
+- Attention aux références : les valeurs ADEME/COSTIC récentes sont exprimées en litres à 40 °C, les anciennes valeurs conventionnelles et les fiches solaires en litres à 60 °C. Toute comparaison passe par la formule de conversion ci-dessus.
+
+## 1. Besoins journaliers par usage
+
+### 1.1 Logement collectif / individuel ([G1], confiance haute)
+
+Valeurs mesurées, absences comprises, incluant une part des pertes de distribution.
+
+- Moyenne tous ménages : 56 L/j/personne à 40 °C (écart-type 23). Soit 35 L/j/personne à 55 °C pour Tef 16 °C.
+- Par taille de ménage (L/j/personne à 40 °C) : 1 pers : 80 ; 2 pers : 60 ; 3 pers : 50 ; 4-5 pers : 45 ([G1] p. 7).
+- Échelle immeuble : 125 L/j/logement standard à 40 °C, soit 70 L/j/logement standard à 60 °C (Tef 16 °C) ([G1] p. 14). Le logement standard est un T3 du parc social occupé par 2,1 personnes.
+- Par typologie, échelle logement (L/j à 40 °C, [G1] fig. 5) : T1 : 75 ; T2 : 80 ; T3 : 100 (privé) à 110 (social) ; T4 : 110 (privé) à 145 (social) ; T5 : 140 (privé) à 190 (social).
+- Occupation conventionnelle et coefficient d'équivalence "logement standard" Ns ([G1] fig. 13 et 29, source USH-DEEF/INSEE) :
+
+| Type | Occupants (privé) | Coeff. Ns (privé) | Occupants (social) | Coeff. Ns (social) |
+|---|---|---|---|---|
+| T1 | 1,2 | 0,6 | 1,2 | 0,6 |
+| T2 | 1,4 | 0,7 | 1,4 | 0,7 |
+| T3 | 1,9 | 0,9 | 2,1 | 1,0 |
+| T4 | 2,3 | 1,1 | 3,0 | 1,4 |
+| T5 | 2,7 | 1,3 | 3,7 | 1,8 |
+| T6+ | 2,9 | 1,4 | 3,9 | 1,9 |
+
+- Besoins de pointe pour le dimensionnement (échelle immeuble, litres à 60 °C, Tef 9 °C, [G1] fig. 30) :
+
+| Durée | Formule | Validité |
+|---|---|---|
+| 10 min | V = 61 x n^0,503 (n = nombre de logements) | n > 10 |
+| 1 h | V = 83 x Ns^0,708 (Ns = logements standards) | Ns > 10 |
+| 2 h | V = 108 x Ns^0,773 | Ns > 20 |
+| 3 h | V = 116 x Ns^0,815 | Ns > 20 |
+| 4 h | V = 162 x Ns^0,789 | Ns > 20 |
+| 5 h | V = 189 x Ns^0,784 | Ns > 20 |
+| 6 h | V = 241 x Ns^0,758 | Ns > 20 |
+| 7 h | V = 277 x Ns^0,75 | Ns > 20 |
+| 8 h | V = 294 x Ns^0,762 | Ns > 20 |
+
+- Coefficients saisonniers ([G3]) : janvier-mai 1,1 ; juin 0,85 ; juillet-août 0,75 ; septembre 0,9 ; octobre 1,05 ; novembre-décembre 1,1.
+- Ancienne base conventionnelle de dimensionnement : environ 120 L/j/logement à 60 °C (Cegibat GRDF, "Évolution des besoins d'ECS en résidentiel", confiance moyenne). Les pointes plurihoraires COSTIC récentes sont en moyenne trois fois plus faibles que celles de la recommandation AICVF 02-2004 (FFB). La recommandation AICVF est payante et non reproduite ici.
+
+### 1.2 Bureaux / tertiaire ([G2], confiance haute)
+
+- 5 à 10 L/employé/jour ouvré à 40 °C (hors douches de salle de sport et hors restaurant d'entreprise), [G2] fig. 144.
+- 0,1 à 0,3 L/m²/jour ouvré à 40 °C, [G2] p. 150.
+- Recoupement [G4] : 2 à 6 L/pers/j à 60 °C (confiance moyenne).
+
+### 1.3 Hôtellerie ([G2], confiance haute sauf mention)
+
+- Hôtels 3 étoiles (37 hôtels-restaurants, 2 800 relevés mensuels, hors lingerie) : 78 L/nuitée à 40 °C (écart-type 21).
+- Hôtels 4 étoiles (42 hôtels, hors lingerie) : 108 L/nuitée à 40 °C (écart-type 31).
+- Hôtels 5 étoiles : environ 3 fois la valeur 3 étoiles, soit de l'ordre de 230 L/nuitée à 40 °C (échantillon de 4 hôtels seulement, confiance moyenne).
+- Environ 1,6 client par chambre occupée ; taux d'occupation moyens 54 à 69 % selon classement (INSEE/DGE, cités dans [G2]).
+- Fourchettes basses solaire à 60 °C ([G3]) : éco 30, 1-2 étoiles 45, 3-4 étoiles 60, 5 étoiles 80 L/chambre/j.
+- Valeurs Cegibat 2017 par étoile (60 à 180 L/chambre/j à 40 °C plus supplément repas) : non vérifiées finement, confiance faible à moyenne, non codées.
+
+### 1.4 Restauration ([G2] fig. 144 et section 3.3, confiance haute pour les mesures, moyenne pour la synthèse bibliographique)
+
+Litres par repas à 40 °C :
+
+- Collective, liaison froide, lave-vaisselle en eau froide : 2 à 3.
+- Collective, liaison froide, lave-vaisselle en ECS : 5 à 10.
+- Collective, préparation sur place, lave-vaisselle eau froide : 5 à 15.
+- Collective, préparation sur place, lave-vaisselle en ECS : 10 à 25.
+- Restauration rapide et self-service : 7 à 14 (biblio).
+- Restauration traditionnelle : 15 à 35 (biblio).
+- Restauration gastronomique : 22 à 40 (biblio).
+- Petit-déjeuner : 4 à 7 (confiance moyenne).
+
+### 1.5 Santé ([G2] fig. 144, confiance haute sauf mention)
+
+Litres par lit et par jour à 40 °C :
+
+- EHPAD sans restauration ni lingerie (69 sites) : 10 à 20.
+- EHPAD, liaison froide + lave-vaisselle ECS, sans lingerie : 20 à 40.
+- EHPAD, liaison froide + lave-vaisselle ECS + lingerie ECS : 30 à 65.
+- EHPAD, cuisine sur place + lave-vaisselle ECS + lingerie ECS : 40 à 95.
+- Hôpitaux (7 sites, services variés) : 15 à 90. Valeur de référence citée par Cegibat : 80 à 100 (confiance moyenne).
+- Cliniques : pas de valeur spécifique trouvée, utiliser la fourchette hôpitaux.
+- Lingerie : 4 à 8 L/kg de linge (valeur type 6) ; 2 à 4 kg de linge/lit/j en EHPAD.
+- Pointe 10 min EHPAD : moins de 8 L/lit à 40 °C (5 EHPAD instrumentés, Cegibat, confiance moyenne).
+
+### 1.6 Scolaire ([G2] fig. 144, confiance haute)
+
+Litres par élève et par jour de classe à 40 °C :
+
+- Externat sans restauration (52 sites) : 2 à 4.
+- Demi-pension liaison froide : 4 à 7 (lave-vaisselle eau froide) ; 7 à 12 (lave-vaisselle ECS).
+- Demi-pension cuisine sur place : 7 à 14 (lave-vaisselle eau froide) ; 12 à 21 (lave-vaisselle ECS).
+- Lycées avec internat (5 à 50 % d'internes, liaison froide, 29 sites) : 6 à 44.
+- Lycées avec internat, cuisine sur place + lave-vaisselle ECS : 14 à 64.
+- Internat, hébergement seul : 30 à 40 L/lit/j à 60 °C ([G4], confiance moyenne).
+
+### 1.7 Sport / vestiaires ([G2] fig. 114, confiance haute pour la source, moyenne pour les valeurs issues de sa synthèse bibliographique)
+
+- Gymnases, sports en salle : 45 à 50 L/pratiquant à 40 °C.
+- Vestiaires de stade (football/rugby) : 65 à 75 L/pratiquant à 40 °C.
+- Piscines : 10 à 30 L/baigneur à 40 °C (4 sites).
+- Débit de douche : 6 L/min en robinetterie temporisée (temporisation 30 s), 8 à 10 L/min en robinetterie ancienne ; une douche de vestiaire représente 45 à 75 L à 40 °C soit 6 à 12 minutes.
+- Attention : très forte dépendance à la fréquentation réelle (mesuré 9 L/poste de douche/j sur un stade contre 168 en bibliographie). La calculette prend la fréquentation en entrée plutôt qu'une constante par poste de douche.
+- Les besoins journaliers d'un stade peuvent atteindre 5 fois la moyenne annuelle ([G2] section 4.2).
+
+## 2. Dimensionnement du stockage
+
+Sources spécifiques :
+
+- [S1] ADEME/EDF/GRDF/COSTIC, "Le dimensionnement des systèmes de production d'eau chaude sanitaire en habitat individuel et collectif", juin 2019, ADEME réf. 010888, ISBN 978-2-36301-015-5. PDF : https://cegibat.grdf.fr/pdf/7984/3090 (aussi sur costic.com)
+- [S2] ThermExcel, "Programme ECSTHERM - Dimensionnement de la production ECS" (J.-Y. Messe, 2014). https://www.thermexcel.com/french/divers/ThermExcel%20-%20Production%20ECS.pdf (source professionnelle non normative)
+- [S3] Cegibat GRDF, dossiers "Le besoin d'ECS dans les établissements de santé" et "dans les établissements hôteliers" (études COSTIC/GRDF). https://cegibat.grdf.fr/dossier-techniques/besoin-eau-chaude-sanitaire-etablissements-sante et https://cegibat.grdf.fr/dossier-techniques/besoin-eau-chaude-sanitaire-etablissements-hoteliers
+- [S4] Livret SOCOL "Eau technique", 2021. https://www.solaire-collectif.fr/photo/img/Livreteautechnique/210208_Livret-SOCOL-Eau-Technique_VF.pdf
+
+### 2.1 Habitat collectif : méthode COSTIC ([G1] et [S1], confiance haute)
+
+La base de besoins du guide 2019 est exprimée à 60 °C avec eau froide 10 °C ; la pointe 10 minutes y vaut V10min = 60 x n^0,503 (n = nombre de logements). Les pointes plurihoraires du guide 2016 (tableau en section 1.1) sont établies pour eau froide 9 °C.
+
+Modes de production et formules exactes ([S1]) :
+
+- Instantané pur (déconseillé par le guide sans stockage primaire) : débit de pointe instantané = 1,3 x débit de pointe 10 minutes, soit qmax = 468 x n^0,503 L/h à 60 °C ; P = qmax x 1,16 x (60 - 10) / 1000.
+- Échangeur + ballon, circulation (charge) permanente : P (kW par logement standard, régime 10/60 °C) = 14 x V^-0,365, avec V le volume total de stockage en litres. Validité : au moins 10 logements standards, différentiel de régulation inférieur ou égal à 5 K, plages de volume de la fig. 26 (exemple 10 logements : 300 à 750 L).
+- Échangeur + ballon, avec arrêts de la circulation : P (kW/logement standard) = 17 x V^-0,385. Volume minimal ([S1] p. 23) : Vl = V10min x (2,4 + 0,18 x Pboucle) = n^0,503 x (144 + 10,8 x Pboucle), Vl en litres, Pboucle en kW (0 si le bouclage n'est pas réchauffé par la production).
+- Accumulation pure (reconstitution nocturne) : capacité supérieure ou égale aux besoins journaliers maximaux, pris égaux à 2 fois les besoins moyens ([S1] fig. 70, valeurs par typologie parc social : T1 90, T2 105, T3 150, T4 210, T5 270, T6+ 285 L/j à 60 °C). Puissance = reconstitution en 6 à 8 h : P = 1,163e-3 x V x (60 - 10) / tr.
+- Réchauffage du bouclage par la production : puissance supplémentaire = 2,5 x pertes du bouclage ([S1] p. 41). Le guide bouclage 2021 ([B1] fig. 82) donne 3 à 5 fois les pertes selon le point de raccordement du retour sur un ballon à échangeur : la calculette affiche 2,5 x en valeur de base et rappelle la fourchette.
+- Ratio pointe 1 h / besoin moyen journalier = 0,6 x Ns^-0,23 ([S1] fig. 19).
+- Le guide COSTIC n'utilise aucun coefficient explicite de stratification : il est intégré dans les abaques. La fourchette "0,7 à 0,9" parfois citée n'a pas de source publique identifiée et n'est pas utilisée.
+
+### 2.2 Tertiaire : méthode des besoins par profil de puisage ([S2], confiance haute pour la lecture, source non normative)
+
+Pour les usages hors habitat, la calculette applique la méthode classique du bilan sur la période de pointe :
+
+- Énergie de la pointe : E_pointe = 1,163e-3 x V_pointe x (Tref - Tef), avec V_pointe le volume puisé pendant la pointe à sa température de référence.
+- Bilan pendant la pointe de durée tp : E_pointe = R x V_stock x (Tsto - Tef) x 1,163e-3 + P x tp. R est le coefficient d'efficacité du stockage (stratification) : 0,80 à 0,95 selon [S2] ("de mauvaise à bonne stratification"), défaut 0,85. Energie+ donne de son côté 0,5 à 0,8 pour un ballon à échangeur : valeur à ajuster selon la technologie.
+- Reconstitution entre deux pointes de durée tr : P x tr supérieur ou égal à R x V_stock x (Tsto - Tef) x 1,163e-3.
+- La puissance requise pour un volume donné est le maximum des deux contraintes ; la calculette présente une gamme de volumes standards avec la puissance associée et met en avant le volume équilibré (les deux contraintes égales).
+
+Profils de pointe par défaut par usage (modifiables dans l'interface) :
+
+- Hôtel : pointe 2 h = 60 % de la consommation journalière (hôtels de tourisme, [S2] p. 22 ; pointe du matin dominante confirmée par [S3], pointe 10 min = 10 à 35 % du besoin journalier). Confiance moyenne.
+- Restaurant : pointe structurelle = repas du service de pointe x ratio par repas, sur la durée du service (pas de coefficient inventé).
+- Santé : pointe 10 min = 61 x n^0,503 L à 60 °C avec n = nombre de lits, n > 10 ([S4] p. 5, citant COSTIC/GRDF, confiance haute) ; pic dominant 8 h - 10 h, pointe 10 min inférieure à 8 L/lit à 40 °C et jusqu'à 20 % du besoin journalier en EHPAD ([S3], confiance moyenne). Fraction de pointe 2 h par défaut : 40 %, hypothèse de travail non normée, signalée dans l'interface.
+- Sport/vestiaires : pointe structurelle = douches du créneau de pointe (pratiquants du créneau x litres par douche) sur la durée du créneau de douches.
+- Bureaux : fraction de pointe 1 h par défaut 25 %, hypothèse de travail non normée, signalée dans l'interface.
+- Scolaire : pointe par défaut = service de midi (50 % du besoin sur 1,5 h), hypothèse de travail non normée, signalée dans l'interface.
+
+### 2.3 Cadre réglementaire température ([B3] et [S1], confiance haute sauf mention)
+
+- Stockage total supérieur ou égal à 400 L : eau en permanence à 55 °C au moins en sortie des équipements, ou montée quotidienne à température suffisante (barème annexe 1 de l'arrêté : 2 min à 70 °C, ou 4 min à 65 °C, ou 60 min à 60 °C ; annexe non reproduite sur Légifrance, valeurs concordantes chez Cegibat, confiance moyenne).
+- Distribution : 50 °C minimum en tout point si le volume entre production et puisage le plus éloigné dépasse 3 L ; antennes non bouclées 3 L maximum (et 8 m maximum selon NF DTU 60.11 P1-2).
+- Points de puisage : 50 °C maximum dans les pièces destinées à la toilette, 60 °C maximum dans les autres pièces ; dans les cuisines et buanderies des ERP, jusqu'à 90 °C possible en des points signalés.
+- Surveillance légionelles (ERP, santé, hôtels...) : arrêté du 1er février 2010 modifié (seuil Legionella pneumophila 1000 UFC/L aux points d'usage), complété par les arrêtés du 30 décembre 2022.
+
+### 2.4 Hors périmètre chiffré (pas de source publique suffisante)
+
+- Recommandation AICVF 02-2004 : document payant, coefficients non reproduits.
+- Valeurs Cegibat par étoile d'hôtel (60 à 180 L/chambre/j à 60 °C) : non recoupées finement, utilisées seulement pour l'option "1-2 étoiles" avec signalement de confiance faible dans l'interface.
+- Hôtels 1-2 étoiles et 5 étoiles : échantillons mesurés COSTIC trop faibles ; l'interface le signale.
+
+## 3. Bouclage
+
+Sources spécifiques :
+
+- [B1] COSTIC, "La conception des réseaux bouclés d'eau chaude sanitaire", guide technique ADEME/EDF, février 2021, 116 p., ISBN 978-2-36301-017-9. https://cegibat.grdf.fr/sites/default/files/assets/GUIDE%20bouclage-Fev%202021-FF.pdf (aussi sur librairie.ademe.fr et costic.com). Référence publique la plus complète, dérivée du NF DTU 60.11 P1-2 (août 2013).
+- [B2] Programme RAGE/PACTE, "Installations d'eau chaude sanitaire - Confort, prévention des risques et maîtrise des consommations", novembre 2014. https://www.programmepacte.fr/sites/default/files/pdf/guide-rage-installations-eau-chaude-sanitaire-2014-11_0.pdf
+- [B3] Article 36 de l'arrêté du 23 juin 1978 modifié par l'arrêté du 30 novembre 2005. https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006828036
+- [B4] Caleffi, "Réussir l'équilibrage du bouclage", 2015. https://www.caleffi.com/sites/default/files/media/external-file/08615_FR.pdf
+- [B5] ThermExcel, "Bouclages eau chaude sanitaire". https://www.thermexcel.com/french/ressourc/plomberie_bouclage_eau_chaude_sanitaire_ecs.htm
+
+Nota : les valeurs issues du NF DTU 60.11 P1-2 et du NF DTU 60.1 (documents AFNOR payants) sont citées de seconde main via [B1], [B2] et [B4], concordantes entre elles. Une vérification sur le texte AFNOR reste souhaitable pour un livrable contractuel.
+
+### 3.1 Cadre réglementaire ([B3], confiance haute)
+
+- Température supérieure ou égale à 50 °C en tout point du système de distribution (hors tubes finaux d'alimentation) dès que le volume entre production et point de puisage le plus éloigné dépasse 3 litres.
+- Stockage de plus de 400 L : au moins 55 °C en sortie de stockage en permanence, ou montée en température quotidienne.
+- Aux points de puisage : 50 °C maximum dans les pièces destinées à la toilette, 60 °C maximum ailleurs.
+- Consigne de production recommandée : 60 °C ([B1] p. 9 ; 55 °C en consigne ne permet généralement pas de tenir 50 °C au bouclage).
+
+### 3.2 Débit de bouclage ([B1] p. 51-61, confiance haute)
+
+- Formule : Q (L/h) = P (W) / (1,16 x deltaT), avec P les pertes thermiques du réseau bouclé et deltaT la chute de température admissible entre sortie de production et point le plus défavorisé.
+- Chute maximale : 5 K (jusqu'à 7 K si la sortie de production ne descend jamais sous 57 °C ; ne pas viser moins de 5 K, surdébits inutiles), [B1] p. 51-52.
+- Méthode NF DTU 60.11 P1-2 (via [B1]) : le débit de chaque boucle est d'abord fixé au minimum satisfaisant v = 0,2 m/s, puis la chute de température est vérifiée tronçon par tronçon ; le débit n'est augmenté que si la chute dépasse la limite. La calculette applique : débit retenu = max(débit issu des pertes ; débit assurant 0,2 m/s dans le retour).
+
+### 3.3 Pertes thermiques ([B1] p. 33-36 et annexe 1, confiance haute)
+
+- Formule : P = k x L x (Tecs - Tamb), avec k en W/(m.K) le coefficient de pertes du tube calorifugé, Tamb la température ambiante minimale des locaux traversés (dimensionnement).
+- Classes d'isolation NF EN 12828 (k maximal en W/(m.K), d = diamètre extérieur du tube nu en mètres) : classe 1 : 3,3d + 0,22 ; classe 2 : 2,6d + 0,20 ; classe 3 : 2,0d + 0,18 ; classe 4 : 1,5d + 0,16 ; classe 5 : 1,1d + 0,14 ; classe 6 : 0,8d + 0,12.
+- Ordre de grandeur : 7 à 10 W/m en classe 4 pour des tubes De 14 à 64, eau 60 °C, ambiance 20 °C ([B1] fig. 28 p. 34). Ratio RAGE : environ 10 W/m en classe 2 et 5 W/m en classe 6 ([B2] fig. 45 p. 56).
+- Extrait cuivre / laine minérale 0,035 revêtue alu (k en W/(m.K), [B1] annexe 1) : épaisseur 30 mm : De 14 : 0,12 ; De 16 : 0,13 ; De 18 : 0,13 ; De 22 : 0,15 ; De 28 : 0,17 ; De 35 : 0,19 ; De 42 : 0,21 ; De 54 : 0,25 ; De 64 : 0,28.
+- Ambiance 10 °C au lieu de 20 °C : environ 20 % de pertes en plus. Ambiances usuelles : sous-sol 10 °C, gaines techniques 20 °C ([B1] p. 35 et 58).
+- Tube non calorifugé : de l'ordre de 26 à 85 W/m selon matériau et diamètre ([B1] fig. 29, appariement diamètre/valeur à confirmer visuellement, confiance moyenne).
+
+### 3.4 Vitesses et diamètres ([B1] p. 45-55, [B2] p. 100, confiance haute)
+
+- Retour de bouclage : vitesse entre 0,2 m/s (minimum NF DTU 60.11, turbulence, limite biofilm) et 0,5 m/s. Cuivre : moins de 0,3 m/s conseillé en régime permanent (corrosion-érosion).
+- Aller : 1,5 m/s maximum en colonnes et logements, 2 m/s en sous-sol ; collecteur de retour 1 m/s maximum.
+- Diamètre minimal du retour : cuivre 12/14, PVC-C 12,4/16, PEX/PB 13/16, autres matériaux 12 mm intérieur. Acier galvanisé à proscrire en bouclage ([B1] p. 67) et jamais en aval de cuivre.
+- Débits par diamètre cuivre ([B1] fig. 45 p. 55), en L/h à 0,2 / 0,3 / 0,5 m/s : 12/14 : 85 / 120 / 200 ; 14/16 : 115 / 165 / 275 ; 16/18 : 145 / 215 / 360 ; 20/22 : 230 / 335 / 565 ; 26/28 : 385 / 570 / 955 ; 33/35 : 620 / 920 / 1535 ; 40/42 : 905 / 1355 / 2260 ; 52/54 : 1530 / 2290 / 3820 ; 60/64 : 2040 / 3050 / 5085.
+- Débit plancher de fait par boucle : 85 à 90 L/h (v = 0,2 m/s dans le diamètre minimal). Aucune source normative publique n'impose un forfait "50 ou 60 L/h par boucle".
+- Antenne non bouclée : 8 m maximum (NF DTU 60.11 P1-2) et 3 L maximum entre production et puisage ([B3]).
+
+### 3.5 Puissance de compensation ([B1] p. 54, 96 et 102, confiance haute)
+
+- Pertes du bouclage = somme aller + retour du réseau bouclé, calculées sans soutirage, aux ambiances minimales. Exemple [B1] : 12 logements, 1 kW total (0,6 kW aller + 0,4 kW retour) pour 360 L/h.
+- Réchauffeur de boucle dédié : puissance = pertes thermiques maximales du bouclage.
+- Réchauffage par la production (ballon à échangeur) : la puissance supplémentaire à prévoir vaut environ 3 fois les pertes (retour raccordé au niveau du serpentin) à 5 fois les pertes (retour au-dessus de l'échangeur), [B1] fig. 82 p. 96.
+
+### 3.6 Équilibrage (rappels affichés, non calculés)
+
+- Ouverture supérieure ou égale à 1 mm des organes d'équilibrage (NF DTU 60.11 P1-2).
+- Perte de charge minimale de la vanne d'équilibrage : 200 mmCE (300 mmCE si mesure de débit par prises de pression), [B1] p. 61.
+- Perte de charge totale du circuit le plus défavorisé, production incluse : 5 mCE maximum ; échangeur ECS : moins de 2 mCE.

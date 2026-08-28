@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculette ECS et Bouclage</title>
+<style>
+/* Calculette ECS et Bouclage : outil autonome, aucun serveur, aucune requête externe.
+   Thème repris du Sélectionneur de radiateurs (2026-07-07) : palette papier/encre,
+   primaire olive, clair par défaut et sombre via [data-theme="dark"] ou le réglage système.
+   Police : pile Inter sans lien Google Fonts (Segoe UI prend le relais sur Windows). */
+:root{
+  color-scheme: light;
+  --fond:#f5f5f3;
+  --papier:#ffffff;
+  --papier-2:#f6f9ec;
+  --papier-3:#eef5dc;
+  --encre:#231f20;
+  --encre-2:#58595b;
+  --discret:#8a8c8f;
+  --ligne:#e4e5e7;
+  --ligne-2:#efeff0;
+  --primaire:#7da32f;
+  --primaire-fond:#eef5dc;
+  --primaire-encre:#55701f;
+  --lien:#55701f;
+  --haute:#c4423b;
+  --haute-fond:#fbe9e7;
+  --moyenne:#d08a1e;
+  --moyenne-fond:#fbf1df;
+  --basse-fond:#f0f0ee;
+  --note-fond:#fbf1df;
+  --note-bord:#d08a1e;
+  --ok:#7da32f;
+  --sur-primaire:#ffffff;
+  --rayon:6px;
+  --rayon-s:6px;
+  --ombre:0 1px 2px rgba(35,31,32,.06), 0 4px 16px rgba(35,31,32,.06);
+  --vitesse:.12s;
+}
+[data-theme="dark"]{
+  color-scheme: dark;
+  --fond:#131412;
+  --papier:#1b1c19;
+  --papier-2:#21251b;
+  --papier-3:#2a2f20;
+  --encre:#edece9;
+  --encre-2:#b5b4b0;
+  --discret:#8b8d90;
+  --ligne:#2e2f2c;
+  --ligne-2:#252624;
+  --primaire:#a5cc52;
+  --primaire-fond:#2b3319;
+  --primaire-encre:#c6e18b;
+  --lien:#b5d178;
+  --haute:#e0736c;
+  --haute-fond:#3a2220;
+  --moyenne:#e0a558;
+  --moyenne-fond:#362a15;
+  --basse-fond:#26272a;
+  --note-fond:#33290f;
+  --note-bord:#b07a24;
+  --ok:#a5cc52;
+  --sur-primaire:#0f141b;
+  --ombre:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+}
+@media (prefers-reduced-motion: reduce){ :root{ --vitesse:0s } *{ animation:none !important; transition:none !important } }
+
+*{box-sizing:border-box}
+body{
+  font-family:Inter,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  margin:0;color:var(--encre);background:var(--fond);font-size:14px;line-height:1.5;
+  transition:background-color var(--vitesse),color var(--vitesse);
+}
+a{color:var(--lien);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--primaire);outline-offset:2px;border-radius:4px}
+
+/* ---- en-tete */
+header{
+  display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;
+  padding:11px 22px;background:var(--papier);border-bottom:1px solid var(--ligne);
+  position:sticky;top:0;z-index:6;
+}
+header .logo{
+  width:30px;height:30px;border-radius:var(--rayon-s);background:var(--primaire);color:var(--sur-primaire);
+  display:inline-flex;align-items:center;justify-content:center;flex:none;
+}
+header .titre{display:flex;flex-direction:column;gap:1px;min-width:0}
+header h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.3px;color:var(--encre);line-height:1.2}
+header .sub{font-size:12.5px;color:var(--discret);font-weight:400}
+header .espace{flex:1}
+.bouton-icone{
+  background:transparent;border:1px solid var(--ligne);color:var(--encre-2);border-radius:var(--rayon-s);
+  width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background-color var(--vitesse),transform var(--vitesse);flex:none;
+}
+.bouton-icone:hover{background:var(--papier-3);transform:rotate(15deg)}
+
+.wrap{padding:18px 22px 60px;max-width:1500px;margin:0 auto}
+
+/* ---- onglets scenarios */
+.tabs{display:flex;gap:4px;margin:0 0 16px;flex-wrap:wrap;align-items:center}
+.tabs button.onglet{
+  display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid transparent;
+  padding:8px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--encre-2);
+  cursor:pointer;border-radius:var(--rayon);transition:background-color var(--vitesse),color var(--vitesse);
+  max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tabs button.onglet:hover{background:var(--papier-3);color:var(--encre)}
+.tabs button.onglet.active{background:var(--primaire-fond);color:var(--primaire-encre)}
+.tabs .espace{flex:1}
+
+/* ---- boutons */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;background:var(--primaire);color:var(--sur-primaire);border:1px solid var(--primaire);
+  border-radius:var(--rayon-s);padding:8px 14px;font:inherit;font-size:13px;cursor:pointer;font-weight:600;
+  transition:filter var(--vitesse),background-color var(--vitesse),transform var(--vitesse);
+}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:scale(.97)}
+.btn.sec{background:var(--papier);color:var(--primaire-encre);border-color:var(--ligne)}
+.btn.sec:hover{background:var(--primaire-fond);filter:none}
+.btn.mini{padding:4px 9px;font-size:12px}
+.btn.danger{background:var(--papier);color:var(--haute);border-color:var(--ligne)}
+.btn.danger:hover{background:var(--haute-fond)}
+
+/* ---- disposition deux colonnes */
+main.cols{
+  display:grid;
+  grid-template-columns:minmax(340px,5fr) minmax(360px,4fr);
+  gap:18px;align-items:start;
+}
+@media (max-width: 980px){ main.cols{grid-template-columns:1fr} }
+#colResultats{position:sticky;top:66px;max-height:calc(100vh - 80px);overflow-y:auto}
+@media (max-width: 980px){ #colResultats{position:static;max-height:none;overflow:visible} }
+
+/* ---- panneaux */
+.panel{background:var(--papier);border-radius:var(--rayon);box-shadow:var(--ombre);margin-bottom:18px;overflow:hidden}
+[data-theme="dark"] .panel{border:1px solid var(--ligne)}
+.panel h2{
+  margin:0;padding:12px 16px;font-size:15px;font-weight:700;color:var(--encre);
+  background:var(--papier-2);border-bottom:1px solid var(--ligne);
+  display:flex;align-items:center;gap:9px;
+}
+.panel h2 small{font-weight:400;color:var(--discret);font-size:12px}
+.panel .body{padding:16px}
+h3{margin:14px 0 8px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--discret)}
+h3:first-child{margin-top:0}
+
+/* ---- champs */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld > label{font-size:12px;font-weight:600;color:var(--encre-2);line-height:1.35}
+.hint{font-size:11px;color:var(--discret);font-weight:400;line-height:1.45}
+.ligne{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+input[type=number],input[type=text],select{
+  font:inherit;padding:7px 10px;border:1px solid var(--ligne);border-radius:var(--rayon-s);
+  background-color:var(--papier-2);color:var(--encre);
+  transition:border-color var(--vitesse),background-color var(--vitesse);
+}
+input[type=number]{width:110px}
+input[type=text],select{width:100%}
+input[type=number]:focus,input[type=text]:focus,select:focus{outline:none;border-color:var(--primaire);background-color:var(--papier)}
+input.modifie{background-color:var(--note-fond);border-color:var(--note-bord)}
+.unite{color:var(--discret);font-size:12px}
+button.reset{
+  border:none;background:none;color:var(--lien);
+  cursor:pointer;font-size:11.5px;padding:2px 4px;text-decoration:underline;font-family:inherit;
+}
+.grilleTypo{display:grid;grid-template-columns:repeat(6,minmax(56px,1fr));gap:8px}
+.grilleTypo .fld label{font-size:11.5px}
+.grilleTypo input{width:100%}
+.chkligne{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--encre-2);cursor:pointer;margin:2px 0}
+.chkligne input{width:15px;height:15px;accent-color:var(--primaire);cursor:pointer}
+
+/* ---- bandeaux d'information et d'alerte */
+.live{
+  background:var(--note-fond);border:1px solid var(--note-bord);
+  border-radius:var(--rayon);padding:10px 14px;margin:10px 0 4px;font-size:13px;color:var(--encre);
+}
+.regwarn{
+  display:flex;align-items:flex-start;gap:9px;background:var(--haute-fond);border:1px solid var(--haute);
+  color:var(--haute);border-radius:var(--rayon);padding:10px 14px;font-size:13px;font-weight:600;margin:10px 0 4px;
+}
+.notice{font-size:12px;color:var(--discret);margin-top:8px;line-height:1.6}
+
+/* ---- cartes de resultats */
+.synth{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:10px}
+.card{background:var(--papier-2);border:1px solid var(--ligne);border-radius:var(--rayon);padding:12px 14px}
+.card .v{font-size:22px;font-weight:700;color:var(--primaire-encre);line-height:1.2}
+.card .v small{font-size:12px;font-weight:400;color:var(--discret)}
+.card .k{font-size:12px;color:var(--discret);margin-top:2px}
+
+/* ---- tableaux */
+table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 10px}
+th,td{padding:6px 9px;text-align:left;border-bottom:1px solid var(--ligne-2)}
+th{
+  background:var(--papier-2);color:var(--discret);font-weight:600;font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--ligne);
+}
+td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tbody tr{transition:background-color var(--vitesse)}
+tbody tr:hover td{background:var(--papier-2)}
+tr.reco td{background:var(--primaire-fond);font-weight:700;color:var(--primaire-encre)}
+tr.reco:hover td{background:var(--primaire-fond)}
+
+.badge{
+  display:inline-block;padding:1px 9px;border-radius:11px;
+  font-size:11.5px;font-weight:700;letter-spacing:.3px;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.badge.ok{background:var(--primaire-fond);color:var(--primaire-encre);border:1px solid var(--primaire)}
+.badge.alerte{background:var(--moyenne-fond);color:var(--moyenne);border:1px solid var(--moyenne)}
+.badge.ko{background:var(--haute-fond);color:var(--haute);border:1px solid var(--haute)}
+
+.methodo{font-size:12.5px;color:var(--encre-2);line-height:1.6}
+.methodo ul{margin:4px 0;padding-left:18px}
+.methodo li{margin-bottom:4px}
+
+footer.pied{
+  padding:14px 22px 26px;max-width:1500px;margin:0 auto;
+  font-size:12px;color:var(--discret);line-height:1.6;
+}
+
+/* ---- impression : fiche de synthese uniquement, toujours sur fond clair */
+@media print{
+  :root,[data-theme="dark"]{
+    color-scheme:light;
+    --fond:#fff;--papier:#fff;--papier-2:#f6f9ec;--papier-3:#eef5dc;
+    --encre:#231f20;--encre-2:#58595b;--discret:#6b6d70;
+    --ligne:#c9cbcd;--ligne-2:#dcdee0;
+    --primaire:#7da32f;--primaire-fond:#eef5dc;--primaire-encre:#43590f;--lien:#43590f;
+    --haute:#a8332c;--haute-fond:#fbe9e7;--moyenne:#a06a12;--moyenne-fond:#fbf1df;--ok:#4d6b1c;
+    --basse-fond:#f0f0ee;--note-fond:#fbf1df;--note-bord:#d08a1e;--sur-primaire:#ffffff;--ombre:none;
+  }
+  body{background:#fff;font-size:11px}
+  header{position:static;border-bottom:1px solid var(--ligne)}
+  .tabs,.noprint,.bouton-icone,button.reset,.hint{display:none !important}
+  .wrap{padding:0 6px}
+  main.cols{display:block}
+  #colResultats{position:static;max-height:none;overflow:visible}
+  .panel{break-inside:avoid;box-shadow:none;border:1px solid var(--ligne)}
+  .entete-impression{display:block !important;margin:10px 0;padding-bottom:6px;border-bottom:2px solid var(--primaire)}
+  input,select{border:none;background:none;padding:0;font-weight:600}
+  input.modifie{background:none}
+}
+.entete-impression{display:none;font-size:12.5px}
+</style>
+<script>try{var t=localStorage.getItem('calculette_ecs_theme');document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+</head>
+<body>
+
+<header>
+  <span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg></span>
+  <div class="titre">
+    <h1>Calculette ECS et Bouclage</h1>
+    <span class="sub">Stockage ECS et dimensionnement du bouclage - hypothèses sourcées COSTIC/ADEME, modifiables</span>
+  </div>
+  <span class="espace"></span>
+  <button type="button" class="btn sec noprint" id="btnImprimer" title="Fiche de synthèse via l'impression du navigateur">Imprimer / PDF</button>
+  <button type="button" class="btn sec noprint" id="btnExport" title="Copier la fiche de synthèse au format texte">Copier la synthèse</button>
+  <button type="button" class="bouton-icone noprint" id="btnTheme" aria-label="Changer de thème"></button>
+</header>
+
+<div class="wrap">
+
+  <div class="tabs noprint" id="barreScenarios"></div>
+
+  <div class="entete-impression">
+    <b>Fiche de dimensionnement ECS et bouclage</b><br>
+    <span id="impressionMeta"></span>
+  </div>
+
+  <main class="cols">
+    <div id="zoneSaisie">
+      <div class="panel">
+        <h2>Projet et usage</h2>
+        <div class="body">
+          <div class="fld" style="margin-bottom:12px">
+            <label for="inpProjet">Nom du projet / scénario</label>
+            <input type="text" id="inpProjet" placeholder="Ex. : Résidence Les Tilleuls - 48 logements">
+          </div>
+          <div class="fld" style="margin-bottom:12px">
+            <label for="selUsage">Type de bâtiment / usage</label>
+            <select id="selUsage"></select>
+          </div>
+          <div class="grid" id="zoneChampsUsage"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Hypothèses générales</h2>
+        <div class="body">
+          <div class="grid" id="zoneHypotheses"></div>
+          <div class="notice">Les valeurs préremplies sont des hypothèses par défaut sourcées (voir "Méthode et hypothèses"), à ajuster selon le projet. Un champ sur fond ambre a été modifié par rapport au défaut.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Bouclage</h2>
+        <div class="body">
+          <div class="grid" id="zoneBouclage"></div>
+          <div class="notice">Renseigner une longueur aller nulle pour ignorer le calcul de bouclage.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Vérification d'une installation existante <small>facultatif, laisser à 0 sinon</small></h2>
+        <div class="body">
+          <div class="grid" id="zoneVerif"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="colResultats">
+      <div class="panel">
+        <h2>Résultats</h2>
+        <div class="body" id="zoneResultats"></div>
+      </div>
+      <div class="panel">
+        <h2>Méthode et hypothèses</h2>
+        <div class="body methodo" id="zoneMethodo"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="pied">
+  <div>Outil d'aide au pré-dimensionnement à usage professionnel. Les résultats sont des ordres de grandeur à valider par une étude détaillée ; ils ne se substituent ni aux textes réglementaires ni aux règles de l'art (arrêté du 30 novembre 2005, NF DTU 60.11, guides COSTIC et RAGE/PACTE). Sources détaillées : docs/methodes.md du projet.</div>
+  <div class="noprint">Aucune donnée n'est transmise : tout se calcule dans le navigateur, les scénarios sont enregistrés localement (localStorage).</div>
+</footer>
+
+<script>
+"use strict";
+/* ================================================================
+   SECTION 1 - CONSTANTES ET DONNEES DE REFERENCE (toutes sourcées)
+   Sources détaillées dans docs/methodes.md :
+   [G1] ADEME/COSTIC 2016, besoins ECS habitat.
+   [G2] COSTIC/GRDF/ADEME 2020, besoins ECS tertiaire.
+   [S1] ADEME/EDF/GRDF/COSTIC 2019, dimensionnement production ECS.
+   [S2] ThermExcel, programme ECSTHERM (non normatif).
+   [S3] Cegibat GRDF, dossiers santé et hôtellerie.
+   [B1] COSTIC/ADEME 2021, conception des réseaux bouclés ECS.
+   [B3] Article 36 arrêté du 23/06/1978 modifié par arrêté du 30/11/2005.
+   ================================================================ */
+const C_EAU = 1.163e-3; // kWh/(L.K), confirmé COSTIC (1,16 arrondi) et ThermExcel
+
+// Coefficients d'équivalence "logement standard" [G1] fig. 13 et 29
+const COEF_LGT = {
+  social: { T1: 0.6, T2: 0.7, T3: 1.0, T4: 1.4, T5: 1.8, T6: 1.9 },
+  prive:  { T1: 0.6, T2: 0.7, T3: 0.9, T4: 1.1, T5: 1.3, T6: 1.4 }
+};
+
+// Classes d'isolation NF EN 12828 : k maxi (W/m.K) = a x d + b, d = De tube nu en m ([B1] annexe 1)
+const CLASSES_ISOL = {
+  1: { a: 3.3, b: 0.22 }, 2: { a: 2.6, b: 0.20 }, 3: { a: 2.0, b: 0.18 },
+  4: { a: 1.5, b: 0.16 }, 5: { a: 1.1, b: 0.14 }, 6: { a: 0.8, b: 0.12 }
+};
+
+// Tubes cuivre : débits (L/h) à 0,2 / 0,3 / 0,5 m/s ([B1] fig. 45 p. 55)
+const CUIVRE = [
+  { di: 12, de: 14, q02: 85,   q03: 120,  q05: 200 },
+  { di: 14, de: 16, q02: 115,  q03: 165,  q05: 275 },
+  { di: 16, de: 18, q02: 145,  q03: 215,  q05: 360 },
+  { di: 20, de: 22, q02: 230,  q03: 335,  q05: 565 },
+  { di: 26, de: 28, q02: 385,  q03: 570,  q05: 955 },
+  { di: 33, de: 35, q02: 620,  q03: 920,  q05: 1535 },
+  { di: 40, de: 42, q02: 905,  q03: 1355, q05: 2260 },
+  { di: 52, de: 54, q02: 1530, q03: 2290, q05: 3820 },
+  { di: 60, de: 64, q02: 2040, q03: 3050, q05: 5085 }
+];
+
+const VOLUMES_STD = [200, 300, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 8000, 10000];
+
+/* ----------------------------------------------------------------
+   Définition des usages : champs de saisie et ratios par défaut.
+   Chaque ratio porte sa source et son niveau de confiance.
+   ---------------------------------------------------------------- */
+const USAGES = {
+  logement: {
+    label: "Logement collectif / individuel",
+    champs: [
+      { id: "parc", label: "Parc", type: "select", def: "social",
+        options: [{ v: "social", t: "Social" }, { v: "prive", t: "Privé" }],
+        aide: "Influe sur l'occupation conventionnelle par typologie [G1]." },
+      { id: "typo", label: "Composition (nombre de logements par typologie)", type: "typo", large: true,
+        def: { T1: 0, T2: 10, T3: 20, T4: 10, T5: 0, T6: 0 } },
+      { id: "ratioStd", label: "Besoin moyen par logement standard", type: "number", def: 70, min: 0, step: 5, unite: "L/j à 60 °C",
+        aide: "70 L/j/logement standard à 60 °C, valeur mesurée échelle immeuble [G1] p. 14 (125 L/j à 40 °C). Confiance haute." },
+      { id: "mode", label: "Mode de production", type: "select", def: "permanente",
+        options: [
+          { v: "permanente", t: "Échangeur + ballon, charge permanente" },
+          { v: "arrets", t: "Échangeur + ballon, avec arrêts de circulation" },
+          { v: "accumulation", t: "Accumulation pure (reconstitution nocturne)" }
+        ],
+        aide: "Couples volume/puissance selon abaques COSTIC [S1]. L'instantané pur est déconseillé par le guide (affiché à titre d'information dans les résultats)." },
+      { id: "bclRech", label: "Bouclage réchauffé par la production ECS", type: "checkbox", def: true,
+        aide: "Si oui : surpuissance 2,5 x pertes du bouclage [S1] p. 41 (3 à 5 x selon raccordement, [B1] fig. 82)." }
+    ]
+  },
+  bureaux: {
+    label: "Tertiaire / bureaux",
+    champs: [
+      { id: "employes", label: "Nombre d'employés", type: "number", def: 100, min: 0, step: 5, unite: "personnes" },
+      { id: "ratio", label: "Besoin par employé", type: "number", def: 7.5, min: 0, step: 0.5, unite: "L/j ouvré à 40 °C",
+        aide: "5 à 10 L/employé/j ouvré à 40 °C, hors douches et restaurant d'entreprise [G2] fig. 144. Confiance haute." },
+      { id: "fracPointe", label: "Part du besoin sur la pointe", type: "number", def: 25, min: 1, max: 100, step: 5, unite: "%",
+        aide: "Hypothèse de travail NON normée, à ajuster (pas de profil publié pour les bureaux)." },
+      { id: "dureePointe", label: "Durée de la pointe", type: "number", def: 1, min: 0.25, step: 0.25, unite: "h" }
+    ]
+  },
+  hotel: {
+    label: "Hôtellerie",
+    champs: [
+      { id: "chambres", label: "Nombre de chambres", type: "number", def: 50, min: 0, step: 1, unite: "chambres" },
+      { id: "standing", label: "Standing", type: "select", def: "e3",
+        options: [
+          { v: "e12", t: "1-2 étoiles (valeur à valider)" },
+          { v: "e3", t: "3 étoiles" },
+          { v: "e4", t: "4 étoiles" },
+          { v: "e5", t: "5 étoiles (échantillon faible)" }
+        ],
+        aide: "Ratios par nuitée [G2] : 3 ét. 78 L, 4 ét. 108 L à 40 °C (mesurés, confiance haute) ; 5 ét. environ 230 L (4 hôtels, confiance moyenne) ; 1-2 ét. : pas de valeur mesurée fiable, défaut 55 L par recoupement, confiance faible." },
+      { id: "ratioNuitee", label: "Besoin par nuitée (modifiable)", type: "number", def: null, min: 0, step: 1, unite: "L/nuitée à 40 °C",
+        aide: "Prérempli selon le standing. Valeur mesurée sur hôtels-restaurants (restauration des clients incluse pour les 3 étoiles), hors lingerie." },
+      { id: "tauxOcc", label: "Taux d'occupation de dimensionnement", type: "number", def: 100, min: 0, max: 100, step: 5, unite: "%",
+        aide: "Garder 100 % pour dimensionner (pleine occupation)." },
+      { id: "clientsCh", label: "Clients par chambre occupée", type: "number", def: 1.6, min: 1, step: 0.1, unite: "clients",
+        aide: "Environ 1,6 client par chambre occupée (INSEE/DGE cités dans [G2])." },
+      { id: "lingerie", label: "Lingerie traitée sur place à l'ECS", type: "checkbox", def: false,
+        aide: "Ajoute 9 L/chambre occupée/j à 40 °C (fourchette 4 à 15, [S3], confiance moyenne)." },
+      { id: "repasExt", label: "Repas supplémentaires (clientèle extérieure)", type: "number", def: 0, min: 0, step: 10, unite: "repas/j",
+        aide: "15 L/repas à 40 °C (restauration traditionnelle [G2]). Ne pas compter la restauration des clients, déjà incluse dans le ratio par nuitée." },
+      { id: "fracPointe", label: "Part du besoin sur la pointe", type: "number", def: 60, min: 1, max: 100, step: 5, unite: "%",
+        aide: "Pointe 2 h = 60 % de la consommation journalière, hôtels de tourisme [S2] p. 22 (non normatif) ; pointe du matin dominante [S3]." },
+      { id: "dureePointe", label: "Durée de la pointe", type: "number", def: 2, min: 0.25, step: 0.25, unite: "h" }
+    ]
+  },
+  restaurant: {
+    label: "Restauration",
+    champs: [
+      { id: "typeR", label: "Type de restauration", type: "select", def: "trad",
+        options: [
+          { v: "collLFf", t: "Collective, liaison froide, lave-vaisselle eau froide" },
+          { v: "collLFe", t: "Collective, liaison froide, lave-vaisselle ECS" },
+          { v: "collCPf", t: "Collective, cuisine sur place, lave-vaisselle eau froide" },
+          { v: "collCPe", t: "Collective, cuisine sur place, lave-vaisselle ECS" },
+          { v: "rapide", t: "Restauration rapide / self" },
+          { v: "trad", t: "Restauration traditionnelle" },
+          { v: "gastro", t: "Restauration gastronomique" }
+        ],
+        aide: "Ratios [G2] fig. 144 et section 3.3 (L/repas à 40 °C) : 2-3 ; 5-10 ; 5-15 ; 10-25 ; 7-14 ; 15-35 ; 22-40. Défaut = milieu de fourchette." },
+      { id: "ratioRepas", label: "Besoin par repas (modifiable)", type: "number", def: null, min: 0, step: 0.5, unite: "L/repas à 40 °C",
+        aide: "Prérempli selon le type de restauration." },
+      { id: "repasJour", label: "Repas servis par jour", type: "number", def: 200, min: 0, step: 10, unite: "repas/j" },
+      { id: "repasService", label: "Repas du service de pointe", type: "number", def: 120, min: 0, step: 10, unite: "repas",
+        aide: "La pointe est structurelle : tous les repas du service sont préparés et plongés pendant le service." },
+      { id: "dureePointe", label: "Durée du service de pointe", type: "number", def: 2, min: 0.5, step: 0.25, unite: "h" }
+    ]
+  },
+  sante: {
+    label: "Santé (EHPAD, hôpital, clinique)",
+    champs: [
+      { id: "typeE", label: "Type d'établissement", type: "select", def: "ehpadRest",
+        options: [
+          { v: "ehpadSimple", t: "EHPAD sans restauration ni lingerie ECS" },
+          { v: "ehpadRest", t: "EHPAD, restauration ECS, sans lingerie" },
+          { v: "ehpadRestLing", t: "EHPAD, restauration + lingerie ECS" },
+          { v: "ehpadCuisLing", t: "EHPAD, cuisine sur place + lingerie ECS" },
+          { v: "hopital", t: "Hôpital / clinique" }
+        ],
+        aide: "Ratios [G2] fig. 144 (L/lit/j à 40 °C) : 10-20 ; 20-40 ; 30-65 ; 40-95 ; hôpitaux 15-90 (référence Cegibat 80-100). Défaut = milieu de fourchette. Cliniques : pas de valeur propre, fourchette hôpitaux." },
+      { id: "ratioLit", label: "Besoin par lit (modifiable)", type: "number", def: null, min: 0, step: 1, unite: "L/lit/j à 40 °C",
+        aide: "Prérempli selon le type d'établissement." },
+      { id: "lits", label: "Nombre de lits", type: "number", def: 80, min: 0, step: 5, unite: "lits" },
+      { id: "fracPointe", label: "Part du besoin sur la pointe", type: "number", def: 40, min: 1, max: 100, step: 5, unite: "%",
+        aide: "Hypothèse de travail NON normée, à ajuster. Pic dominant 8 h - 10 h ; pointe 10 min jusqu'à 20 % du besoin journalier en EHPAD [S3]." },
+      { id: "dureePointe", label: "Durée de la pointe", type: "number", def: 2, min: 0.25, step: 0.25, unite: "h" }
+    ]
+  },
+  scolaire: {
+    label: "Scolaire",
+    champs: [
+      { id: "elevesExt", label: "Élèves externes (sans repas)", type: "number", def: 0, min: 0, step: 10, unite: "élèves",
+        aide: "2 à 4 L/élève/j de classe à 40 °C [G2], défaut 3." },
+      { id: "elevesDP", label: "Élèves demi-pensionnaires", type: "number", def: 400, min: 0, step: 10, unite: "élèves" },
+      { id: "typeDP", label: "Restauration de la demi-pension", type: "select", def: "lfECS",
+        options: [
+          { v: "lfFroid", t: "Liaison froide, lave-vaisselle eau froide" },
+          { v: "lfECS", t: "Liaison froide, lave-vaisselle ECS" },
+          { v: "cpFroid", t: "Cuisine sur place, lave-vaisselle eau froide" },
+          { v: "cpECS", t: "Cuisine sur place, lave-vaisselle ECS" }
+        ],
+        aide: "Ratios [G2] fig. 144 (L/élève DP/j à 40 °C) : 4-7 ; 7-12 ; 7-14 ; 12-21. Défaut = milieu de fourchette." },
+      { id: "internes", label: "Internes (hébergement)", type: "number", def: 0, min: 0, step: 10, unite: "lits",
+        aide: "35 L/lit/j à 60 °C, hébergement seul (Energie+ [G4], confiance moyenne), soit environ 60 L à 40 °C." },
+      { id: "fracPointe", label: "Part du besoin sur la pointe", type: "number", def: 50, min: 1, max: 100, step: 5, unite: "%",
+        aide: "Hypothèse de travail NON normée (service de midi), à ajuster." },
+      { id: "dureePointe", label: "Durée de la pointe", type: "number", def: 1.5, min: 0.25, step: 0.25, unite: "h" }
+    ]
+  },
+  sport: {
+    label: "Sport / vestiaires collectifs",
+    champs: [
+      { id: "typeS", label: "Type d'équipement", type: "select", def: "salle",
+        options: [
+          { v: "salle", t: "Gymnase / sports en salle" },
+          { v: "stade", t: "Stade (football, rugby)" },
+          { v: "piscine", t: "Piscine" }
+        ],
+        aide: "Ratios [G2] fig. 114 (L/pratiquant à 40 °C) : salle 45-50 ; stade 65-75 ; piscine 10-30 (par baigneur). Défaut = milieu de fourchette. Confiance moyenne (synthèse bibliographique)." },
+      { id: "ratioPrat", label: "Besoin par pratiquant (modifiable)", type: "number", def: null, min: 0, step: 1, unite: "L/pratiquant à 40 °C",
+        aide: "Prérempli selon le type d'équipement. Très dépendant de la fréquentation réelle des douches [G2]." },
+      { id: "pratJour", label: "Pratiquants par jour", type: "number", def: 200, min: 0, step: 10, unite: "pratiquants/j" },
+      { id: "pratPointe", label: "Pratiquants au créneau de pointe", type: "number", def: 60, min: 0, step: 5, unite: "pratiquants",
+        aide: "La pointe est structurelle : douches à la fin du créneau (2 équipes + remplaçants pour un stade, par exemple)." },
+      { id: "dureePointe", label: "Durée du créneau de douches", type: "number", def: 0.5, min: 0.25, step: 0.25, unite: "h" }
+    ]
+  }
+};
+
+// Ratios dépendant d'un sous-type (préremplissage du champ modifiable associé)
+const RATIOS_LIES = {
+  hotel: { champ: "ratioNuitee", selon: "standing",
+    valeurs: { e12: 55, e3: 78, e4: 108, e5: 230 } },
+  restaurant: { champ: "ratioRepas", selon: "typeR",
+    valeurs: { collLFf: 2.5, collLFe: 7.5, collCPf: 10, collCPe: 17.5, rapide: 10.5, trad: 25, gastro: 31 } },
+  sante: { champ: "ratioLit", selon: "typeE",
+    valeurs: { ehpadSimple: 15, ehpadRest: 30, ehpadRestLing: 47.5, ehpadCuisLing: 67.5, hopital: 80 } },
+  sport: { champ: "ratioPrat", selon: "typeS",
+    valeurs: { salle: 47.5, stade: 70, piscine: 20 } }
+};
+const RATIO_SCOLAIRE_DP = { lfFroid: 5.5, lfECS: 9.5, cpFroid: 10.5, cpECS: 16.5 };
+
+// Hypothèses générales (communes à tous les usages)
+const HYPOTHESES = [
+  { id: "tef", label: "Température d'eau froide (dimensionnement)", type: "number", def: 10, min: 1, max: 20, step: 1, unite: "°C",
+    aide: "10 °C = base des abaques COSTIC [S1] ; 9 °C = minimum hivernal mesuré [G1] ; 16 °C = moyenne annuelle." },
+  { id: "tsto", label: "Température de stockage / production", type: "number", def: 60, min: 55, max: 90, step: 1, unite: "°C",
+    aide: "60 °C recommandé [B1] p. 9. Stockage total de 400 L et plus : 55 °C mini permanent ou montée quotidienne (arrêté du 30/11/2005)." },
+  { id: "coefR", label: "Efficacité du stockage (stratification)", type: "number", def: 0.85, min: 0.5, max: 1, step: 0.05, unite: "",
+    aide: "0,80 à 0,95 selon ThermExcel [S2] ; 0,5 à 0,8 pour un ballon à échangeur selon Energie+. Sans objet pour les abaques COSTIC logement (déjà intégré)." },
+  { id: "tr", label: "Durée de reconstitution entre deux pointes", type: "number", def: 4, min: 0.5, max: 12, step: 0.5, unite: "h",
+    aide: "Tertiaire : temps entre deux pointes (4 à 6 h typique). Accumulation nocturne : 6 à 8 h [S1]." }
+];
+
+// Champs bouclage
+const CHAMPS_BOUCLAGE = [
+  { id: "bLa", label: "Longueur du réseau bouclé, aller", type: "number", def: 100, min: 0, step: 5, unite: "m" },
+  { id: "bLr", label: "Longueur du retour de bouclage", type: "number", def: 0, min: 0, step: 5, unite: "m",
+    aide: "0 = prendre la même longueur que l'aller." },
+  { id: "bDeAller", label: "Diamètre extérieur moyen de l'aller", type: "select", def: "28",
+    options: CUIVRE.map(t => ({ v: String(t.de), t: "De " + t.de + " (cuivre " + t.di + "/" + t.de + ")" })),
+    aide: "Diamètre moyen pondéré du réseau aller bouclé (pré-dimensionnement)." },
+  { id: "bClasse", label: "Classe d'isolation (NF EN 12828)", type: "select", def: "4",
+    options: [1, 2, 3, 4, 5, 6].map(cl => ({ v: String(cl), t: "Classe " + cl + (cl === 4 ? " (recommandée)" : "") })),
+    aide: "Classe 4 minimum recommandée [B1]. k = coefficient maximal de la classe (approche sécuritaire)." },
+  { id: "bTamb", label: "Température ambiante des locaux traversés", type: "number", def: 20, min: -10, max: 30, step: 1, unite: "°C",
+    aide: "Gaine technique 20 °C, sous-sol 10 °C [B1]. Prendre l'ambiance minimale pour dimensionner." },
+  { id: "bChute", label: "Chute de température admissible", type: "number", def: 5, min: 1, max: 7, step: 0.5, unite: "K",
+    aide: "5 K maxi ([B1] p. 51-52 ; jusqu'à 7 K si la production ne descend jamais sous 57 °C). Garantit 50 °C au point le plus défavorisé (arrêté du 30/11/2005)." },
+  { id: "bMat", label: "Matériau du retour", type: "select", def: "cuivre",
+    options: [{ v: "cuivre", t: "Cuivre (vitesse conseillée 0,3 m/s maxi)" }, { v: "autre", t: "Autre (PVC-C, multicouche...) - 0,5 m/s maxi" }],
+    aide: "Cuivre : moins de 0,3 m/s conseillé en permanent (corrosion-érosion) [B1]. Acier galvanisé à proscrire en bouclage." }
+];
+
+const CHAMPS_VERIF = [
+  { id: "vVol", label: "Volume de stockage existant", type: "number", def: 0, min: 0, step: 50, unite: "L" },
+  { id: "vPui", label: "Puissance de production existante", type: "number", def: 0, min: 0, step: 5, unite: "kW" },
+  { id: "vDebit", label: "Débit de bouclage existant", type: "number", def: 0, min: 0, step: 10, unite: "L/h" }
+];
+
+/* ================================================================
+   SECTION 2 - MOTEUR DE CALCUL (pur, sans DOM)
+   ================================================================ */
+function convVolume(v1, t1, t2, tef) {
+  if (t2 <= tef) return NaN;
+  return v1 * (t1 - tef) / (t2 - tef);
+}
+function kIsolant(classe, deMm) {
+  const c = CLASSES_ISOL[classe];
+  return c.a * (deMm / 1000) + c.b;
+}
+
+// ---- Bouclage : pertes, débit, diamètre retour, puissance ----
+function calcBouclage(s) {
+  const La = s.bLa, Lr = (s.bLr > 0 ? s.bLr : s.bLa);
+  if (!(La > 0)) return null;
+  const classe = parseInt(s.bClasse, 10);
+  const deAller = parseInt(s.bDeAller, 10);
+  const chute = s.bChute, tamb = s.bTamb, tdep = s.tsto;
+  // Température moyenne de boucle approchée : départ - chute/2 (calcul tronçon par tronçon dans [B1])
+  const dT = (tdep - chute / 2) - tamb;
+  if (dT <= 0) return { erreur: "Température ambiante supérieure à la température de boucle : pertes nulles ou négatives." };
+  const seuil = (s.bMat === "cuivre") ? "q03" : "q05";
+  let iRet = 0, res = null;
+  for (let iter = 0; iter < 6; iter++) {
+    const kA = kIsolant(classe, deAller);
+    const kR = kIsolant(classe, CUIVRE[iRet].de);
+    const pAller = kA * La * dT;
+    const pRetour = kR * Lr * dT;
+    const pertes = pAller + pRetour;
+    const qPertes = pertes / (1.16 * chute);          // [B1] p. 57-60
+    const qRetenu = Math.max(qPertes, CUIVRE[iRet].q02); // v >= 0,2 m/s (NF DTU 60.11 via [B1])
+    // plus petit diamètre respectant la vitesse maxi au débit retenu
+    let iNew = CUIVRE.length - 1, depasse = true;
+    for (let i = 0; i < CUIVRE.length; i++) {
+      if (qRetenu <= CUIVRE[i][seuil]) { iNew = i; depasse = false; break; }
+    }
+    res = { pAller, pRetour, pertes, qPertes, qMin: CUIVRE[iNew].q02, qRetenu: Math.max(qPertes, CUIVRE[iNew].q02),
+            tube: CUIVRE[iNew], vitesse: 0.2 * Math.max(qPertes, CUIVRE[iNew].q02) / CUIVRE[iNew].q02,
+            depasse, dT, La, Lr, classe, deAller, chute };
+    if (iNew === iRet) break;
+    iRet = iNew;
+  }
+  return res;
+}
+
+// ---- Logement : méthode COSTIC [G1]/[S1] ----
+function calcLogement(s, bcl) {
+  const coefs = COEF_LGT[s.parc] || COEF_LGT.social;
+  const typo = s.typo || {};
+  let n = 0, ns = 0;
+  for (const t of ["T1", "T2", "T3", "T4", "T5", "T6"]) {
+    const nb = Number(typo[t]) || 0;
+    n += nb; ns += nb * coefs[t];
+  }
+  const r = { type: "logement", n, ns, avert: [] };
+  if (n === 0) { r.vide = true; return r; }
+  r.besoinJour60 = s.ratioStd * ns;                       // L/j à 60 °C [G1]
+  r.besoinJour40 = convVolume(r.besoinJour60, 60, 40, 16); // affichage, base Tef 16 °C [G1]
+  r.v10 = 60 * Math.pow(n, 0.503);                        // L à 60 °C, EF 10 °C [S1]
+  r.v1h = 83 * Math.pow(ns, 0.708);                       // L à 60 °C, EF 9 °C [G1]
+  r.v2h = 108 * Math.pow(ns, 0.773);
+  r.qInst = 468 * Math.pow(n, 0.503);                     // L/h à 60 °C [S1]
+  r.pInst = r.qInst * 1.16 * 50 / 1000;                   // kW, régime 10/60
+  r.ratioP1hJour = 0.6 * Math.pow(ns, -0.23);             // [S1] fig. 19
+  if (n <= 10) r.avert.push("Moins de 11 logements : formules COSTIC hors domaine de validité (n > 10), résultats indicatifs.");
+  if (ns <= 20) r.avert.push("Pointes 2 h et plus valables au-delà de 20 logements standards.");
+
+  const pBoucle = (bcl && !bcl.erreur && s.bclRech && s.mode !== "accumulation") ? bcl.pertes / 1000 : 0;
+  r.pBoucleRech = pBoucle;
+  r.mode = s.mode;
+
+  if (s.mode === "accumulation") {
+    r.vAcc = 2 * r.besoinJour60;                          // besoins max = 2 x moyens [S1] fig. 70
+    const tr = Math.max(s.tr, 1);
+    r.pAcc = C_EAU * r.vAcc * 50 / tr;                    // reconstitution en tr heures, régime 10/60 [S1]
+    r.trAcc = tr;
+    if (s.tr < 6) r.avert.push("Accumulation : le guide COSTIC prévoit une reconstitution en 6 à 8 h ; ajuster la durée de reconstitution.");
+    r.avert.push("Accumulation : maintien en température du bouclage à assurer par un dispositif séparé (réchauffeur = pertes du bouclage).");
+  } else {
+    const a = (s.mode === "arrets") ? 17 : 14;
+    const b = (s.mode === "arrets") ? -0.385 : -0.365;
+    r.vMin = (s.mode === "arrets") ? Math.pow(n, 0.503) * (144 + 10.8 * pBoucle) : null; // [S1] p. 23
+    r.couples = VOLUMES_STD
+      .filter(v => (r.vMin ? v >= r.vMin * 0.8 : true))
+      .map(v => ({ v, p: ns * a * Math.pow(v, b), horsMin: r.vMin ? v < r.vMin : false }));
+    r.pFormule = { a, b };
+  }
+  return r;
+}
+
+// ---- Tertiaire : méthode des besoins par profil de puisage [S2] ----
+function besoinsJour40(usage, s) {
+  const L = [];
+  let pointeStruct = null;
+  if (usage === "bureaux") {
+    L.push({ lib: "Employés", v40: s.employes * s.ratio, det: s.employes + " x " + s.ratio + " L" });
+  } else if (usage === "hotel") {
+    const chOcc = s.chambres * s.tauxOcc / 100;
+    const nuitees = chOcc * s.clientsCh;
+    L.push({ lib: "Nuitées", v40: nuitees * s.ratioNuitee, det: Math.round(nuitees) + " nuitées x " + s.ratioNuitee + " L" });
+    if (s.lingerie) L.push({ lib: "Lingerie", v40: chOcc * 9, det: Math.round(chOcc) + " ch. occupées x 9 L" });
+    if (s.repasExt > 0) L.push({ lib: "Repas extérieurs", v40: s.repasExt * 15, det: s.repasExt + " repas x 15 L" });
+  } else if (usage === "restaurant") {
+    L.push({ lib: "Repas", v40: s.repasJour * s.ratioRepas, det: s.repasJour + " repas x " + s.ratioRepas + " L" });
+    pointeStruct = { v40: Math.min(s.repasService, s.repasJour) * s.ratioRepas, tp: s.dureePointe,
+      lib: "Service de pointe : " + s.repasService + " repas x " + s.ratioRepas + " L sur " + s.dureePointe + " h" };
+  } else if (usage === "sante") {
+    L.push({ lib: "Lits", v40: s.lits * s.ratioLit, det: s.lits + " lits x " + s.ratioLit + " L" });
+  } else if (usage === "scolaire") {
+    if (s.elevesExt > 0) L.push({ lib: "Externes", v40: s.elevesExt * 3, det: s.elevesExt + " x 3 L" });
+    const rDP = RATIO_SCOLAIRE_DP[s.typeDP] || 9.5;
+    if (s.elevesDP > 0) L.push({ lib: "Demi-pensionnaires", v40: s.elevesDP * rDP, det: s.elevesDP + " x " + rDP + " L" });
+    if (s.internes > 0) L.push({ lib: "Internes", v40: s.internes * 60, det: s.internes + " lits x 35 L à 60 °C (60 L à 40 °C)" });
+  } else if (usage === "sport") {
+    L.push({ lib: "Pratiquants", v40: s.pratJour * s.ratioPrat, det: s.pratJour + " x " + s.ratioPrat + " L" });
+    pointeStruct = { v40: Math.min(s.pratPointe, s.pratJour) * s.ratioPrat, tp: s.dureePointe,
+      lib: "Créneau de pointe : " + s.pratPointe + " pratiquants x " + s.ratioPrat + " L sur " + s.dureePointe + " h" };
+  }
+  const v40 = L.reduce((a, l) => a + l.v40, 0);
+  return { v40, lignes: L, pointeStruct };
+}
+
+function calcTertiaire(usage, s) {
+  const b = besoinsJour40(usage, s);
+  const r = { type: "tertiaire", usage, lignes: b.lignes, avert: [] };
+  if (b.v40 <= 0) { r.vide = true; return r; }
+  const tef = s.tef, tsto = s.tsto, R = s.coefR, tr = Math.max(s.tr, 0.5);
+  const dTsto = tsto - tef;
+  r.besoinJour40 = b.v40;
+  r.besoinJour60 = convVolume(b.v40, 40, 60, tef);
+  r.eJour = C_EAU * b.v40 * (40 - tef); // kWh
+  if (b.pointeStruct) {
+    r.ePointe = C_EAU * b.pointeStruct.v40 * (40 - tef);
+    r.tp = b.pointeStruct.tp;
+    r.pointeLib = b.pointeStruct.lib;
+    r.vPointe40 = b.pointeStruct.v40;
+  } else {
+    const frac = Math.min(s.fracPointe, 100) / 100;
+    r.ePointe = frac * r.eJour;
+    r.tp = s.dureePointe;
+    r.vPointe40 = frac * b.v40;
+    r.pointeLib = s.fracPointe + " % du besoin journalier sur " + s.dureePointe + " h";
+  }
+  r.vPointe60 = convVolume(r.vPointe40, 40, 60, tef);
+  // Bilan sur la pointe [S2] : P x tr = énergie déstockée pendant la pointe
+  r.pReconst = r.ePointe / (r.tp + tr);
+  r.pJourMoy = r.eJour / 24;
+  r.vEquilibre = r.ePointe * tr / ((r.tp + tr) * R * C_EAU * dTsto);
+  r.pFn = function (v) {
+    const pPointe = (r.ePointe - R * v * C_EAU * dTsto) / r.tp;
+    return Math.max(pPointe, r.pReconst, r.pJourMoy, 0);
+  };
+  r.couples = VOLUMES_STD.map(v => ({ v, p: r.pFn(v) }));
+  r.vReco = VOLUMES_STD.find(v => v >= r.vEquilibre) || VOLUMES_STD[VOLUMES_STD.length - 1];
+  r.pReco = r.pFn(r.vReco);
+  r.vAccJour = r.eJour / (R * C_EAU * dTsto);
+  if (usage === "sante" && s.lits > 10) {
+    r.p10minSante = 61 * Math.pow(s.lits, 0.503); // L à 60 °C [S4]
+  }
+  r.tr = tr;
+  return r;
+}
+
+function calculer(scenario) {
+  const s = valeursScenario(scenario);
+  const bcl = calcBouclage(s);
+  const res = (scenario.usage === "logement") ? calcLogement(s, bcl) : calcTertiaire(scenario.usage, s);
+  res.bcl = bcl;
+  res.saisies = s;
+  return res;
+}
+
+/* ================================================================
+   SECTION 3 - SCENARIOS (localStorage)
+   ================================================================ */
+const CLE_STOCKAGE = "calculette-ecs-bouclage-v1";
+let etat = { scenarios: [], actif: 0 };
+
+function scenarioVierge() {
+  return { nom: "", usage: "logement", saisies: {} };
+}
+function chargerEtat() {
+  try {
+    const brut = localStorage.getItem(CLE_STOCKAGE);
+    if (brut) {
+      const lu = JSON.parse(brut);
+      if (lu && Array.isArray(lu.scenarios) && lu.scenarios.length) {
+        etat = lu;
+        if (!(etat.actif >= 0 && etat.actif < etat.scenarios.length)) etat.actif = 0;
+        return;
+      }
+    }
+  } catch (e) { /* stockage indisponible : démarrage vierge */ }
+  etat = { scenarios: [scenarioVierge()], actif: 0 };
+}
+function sauverEtat() {
+  try { localStorage.setItem(CLE_STOCKAGE, JSON.stringify(etat)); } catch (e) { /* silencieux */ }
+}
+function scenarioActif() { return etat.scenarios[etat.actif]; }
+
+function champsActifs(scenario) {
+  const u = USAGES[scenario.usage];
+  const liste = [];
+  for (const ch of u.champs) liste.push({ ch, cle: scenario.usage + "." + ch.id });
+  for (const ch of HYPOTHESES) liste.push({ ch, cle: ch.id });
+  for (const ch of CHAMPS_BOUCLAGE) liste.push({ ch, cle: ch.id });
+  for (const ch of CHAMPS_VERIF) liste.push({ ch, cle: ch.id });
+  return liste;
+}
+function defautChamp(scenario, ch) {
+  if (ch.def === null) { // ratio lié à un sous-type
+    const lien = RATIOS_LIES[scenario.usage];
+    if (lien && lien.champ === ch.id) {
+      const cleSelon = scenario.usage + "." + lien.selon;
+      const selon = scenario.saisies[cleSelon];
+      const defSelon = USAGES[scenario.usage].champs.find(c => c.id === lien.selon).def;
+      return lien.valeurs[selon !== undefined ? selon : defSelon];
+    }
+    return 0;
+  }
+  return ch.def;
+}
+function valeursScenario(scenario) {
+  const s = {};
+  for (const { ch, cle } of champsActifs(scenario)) {
+    let v = scenario.saisies[cle];
+    if (v === undefined || v === null || v === "") v = defautChamp(scenario, ch);
+    if (ch.type === "number") v = Number(v);
+    if (ch.type === "typo") {
+      const base = defautChamp(scenario, ch);
+      const t = {};
+      for (const k of Object.keys(base)) {
+        const sv = scenario.saisies[cle + "." + k];
+        t[k] = (sv === undefined || sv === "") ? base[k] : Number(sv);
+      }
+      v = t;
+    }
+    s[ch.id] = v;
+  }
+  return s;
+}
+
+/* ================================================================
+   SECTION 4 - INTERFACE
+   ================================================================ */
+const $ = id => document.getElementById(id);
+function fmt(x, dec) {
+  if (!isFinite(x)) return "-";
+  return x.toLocaleString("fr-FR", { maximumFractionDigits: dec === undefined ? 0 : dec });
+}
+function ech(t) { const d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
+
+function rendreOnglets() {
+  const nav = $("barreScenarios");
+  nav.innerHTML = "";
+  etat.scenarios.forEach((sc, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "onglet" + (i === etat.actif ? " active" : "");
+    b.textContent = sc.nom || ("Scénario " + (i + 1));
+    b.title = USAGES[sc.usage].label;
+    b.addEventListener("click", () => { etat.actif = i; sauverEtat(); rendreTout(); });
+    nav.appendChild(b);
+  });
+  const esp = document.createElement("span");
+  esp.className = "espace";
+  nav.appendChild(esp);
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "btn sec mini"; add.textContent = "+ Nouveau";
+  add.addEventListener("click", () => {
+    etat.scenarios.push(scenarioVierge());
+    etat.actif = etat.scenarios.length - 1;
+    sauverEtat(); rendreTout();
+  });
+  nav.appendChild(add);
+  const dup = document.createElement("button");
+  dup.type = "button";
+  dup.className = "btn sec mini"; dup.textContent = "Dupliquer";
+  dup.title = "Copier le scénario courant pour comparer des hypothèses";
+  dup.addEventListener("click", () => {
+    const copie = JSON.parse(JSON.stringify(scenarioActif()));
+    copie.nom = (copie.nom || "Scénario") + " (variante)";
+    etat.scenarios.splice(etat.actif + 1, 0, copie);
+    etat.actif += 1;
+    sauverEtat(); rendreTout();
+  });
+  nav.appendChild(dup);
+  if (etat.scenarios.length > 1) {
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "btn danger mini"; del.textContent = "Supprimer";
+    del.addEventListener("click", () => {
+      if (!confirm("Supprimer le scénario courant ?")) return;
+      etat.scenarios.splice(etat.actif, 1);
+      etat.actif = Math.max(0, etat.actif - 1);
+      sauverEtat(); rendreTout();
+    });
+    nav.appendChild(del);
+  }
+}
+
+function creerChamp(scenario, ch, cle) {
+  const wrap = document.createElement("div");
+  wrap.className = "fld";
+  if (ch.large) wrap.style.gridColumn = "1 / -1";
+
+  if (ch.type === "typo") {
+    const lab = document.createElement("label");
+    lab.textContent = ch.label;
+    wrap.appendChild(lab);
+    const grille = document.createElement("div");
+    grille.className = "grilleTypo";
+    const base = defautChamp(scenario, ch);
+    for (const k of Object.keys(base)) {
+      const c = document.createElement("div");
+      c.className = "fld";
+      const l2 = document.createElement("label");
+      l2.textContent = (k === "T6") ? "T6+" : k;
+      const inp = document.createElement("input");
+      inp.type = "number"; inp.min = "0"; inp.step = "1";
+      const sv = scenario.saisies[cle + "." + k];
+      inp.value = (sv === undefined || sv === "") ? base[k] : sv;
+      if (Number(inp.value) !== base[k]) inp.classList.add("modifie");
+      inp.addEventListener("input", () => {
+        scenario.saisies[cle + "." + k] = inp.value;
+        inp.classList.toggle("modifie", Number(inp.value) !== base[k]);
+        sauverEtat(); rendreResultats();
+      });
+      c.appendChild(l2); c.appendChild(inp);
+      grille.appendChild(c);
+    }
+    wrap.appendChild(grille);
+  } else if (ch.type === "checkbox") {
+    const ligne = document.createElement("label");
+    ligne.className = "chkligne";
+    const inp = document.createElement("input");
+    inp.type = "checkbox";
+    const sv = scenario.saisies[cle];
+    inp.checked = (sv === undefined) ? ch.def : !!sv;
+    inp.addEventListener("change", () => {
+      scenario.saisies[cle] = inp.checked;
+      sauverEtat(); rendreResultats();
+    });
+    ligne.appendChild(inp);
+    ligne.appendChild(document.createTextNode(ch.label));
+    wrap.appendChild(ligne);
+  } else if (ch.type === "select") {
+    const lab = document.createElement("label");
+    lab.textContent = ch.label;
+    wrap.appendChild(lab);
+    const sel = document.createElement("select");
+    for (const o of ch.options) {
+      const opt = document.createElement("option");
+      opt.value = o.v; opt.textContent = o.t;
+      sel.appendChild(opt);
+    }
+    const sv = scenario.saisies[cle];
+    sel.value = (sv === undefined) ? ch.def : sv;
+    sel.addEventListener("change", () => {
+      scenario.saisies[cle] = sel.value;
+      const lien = RATIOS_LIES[scenario.usage];
+      if (lien && lien.selon === ch.id) delete scenario.saisies[scenario.usage + "." + lien.champ];
+      sauverEtat(); rendreFormulaire(); rendreResultats();
+    });
+    wrap.appendChild(sel);
+  } else { // number
+    const lab = document.createElement("label");
+    lab.textContent = ch.label;
+    wrap.appendChild(lab);
+    const ligne = document.createElement("div");
+    ligne.className = "ligne";
+    const inp = document.createElement("input");
+    inp.type = "number";
+    if (ch.min !== undefined) inp.min = ch.min;
+    if (ch.max !== undefined) inp.max = ch.max;
+    if (ch.step !== undefined) inp.step = ch.step;
+    const def = defautChamp(scenario, ch);
+    const sv = scenario.saisies[cle];
+    inp.value = (sv === undefined || sv === "") ? def : sv;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "reset noprint"; btn.textContent = "défaut";
+    btn.title = "Rétablir la valeur par défaut (" + def + ")";
+    const maj = () => {
+      const estDef = Number(inp.value) === Number(def);
+      inp.classList.toggle("modifie", !estDef);
+      btn.style.display = estDef ? "none" : "";
+    };
+    btn.addEventListener("click", () => {
+      delete scenario.saisies[cle];
+      inp.value = defautChamp(scenario, ch);
+      maj(); sauverEtat(); rendreResultats();
+    });
+    inp.addEventListener("input", () => {
+      scenario.saisies[cle] = inp.value;
+      maj(); sauverEtat(); rendreResultats();
+    });
+    ligne.appendChild(inp);
+    if (ch.unite) {
+      const u = document.createElement("span");
+      u.className = "unite"; u.textContent = ch.unite;
+      ligne.appendChild(u);
+    }
+    ligne.appendChild(btn);
+    wrap.appendChild(ligne);
+    maj();
+  }
+  if (ch.aide) {
+    const a = document.createElement("span");
+    a.className = "hint"; a.textContent = ch.aide;
+    wrap.appendChild(a);
+  }
+  return wrap;
+}
+
+function rendreFormulaire() {
+  const sc = scenarioActif();
+  $("inpProjet").value = sc.nom || "";
+  const sel = $("selUsage");
+  if (!sel.options.length) {
+    for (const [k, u] of Object.entries(USAGES)) {
+      const o = document.createElement("option");
+      o.value = k; o.textContent = u.label;
+      sel.appendChild(o);
+    }
+  }
+  sel.value = sc.usage;
+  const zu = $("zoneChampsUsage");
+  zu.innerHTML = "";
+  for (const ch of USAGES[sc.usage].champs) zu.appendChild(creerChamp(sc, ch, sc.usage + "." + ch.id));
+  const zh = $("zoneHypotheses");
+  zh.innerHTML = "";
+  for (const ch of HYPOTHESES) zh.appendChild(creerChamp(sc, ch, ch.id));
+  const zb = $("zoneBouclage");
+  zb.innerHTML = "";
+  for (const ch of CHAMPS_BOUCLAGE) zb.appendChild(creerChamp(sc, ch, ch.id));
+  const zv = $("zoneVerif");
+  zv.innerHTML = "";
+  for (const ch of CHAMPS_VERIF) zv.appendChild(creerChamp(sc, ch, ch.id));
+}
+
+function carte(valeur, libelle) {
+  return '<div class="card"><div class="v">' + valeur + '</div><div class="k">' + libelle + '</div></div>';
+}
+function badgeEcart(pc) {
+  // pc : écart en % (existant - calculé)/calculé ; l'existant doit atteindre la valeur calculée
+  const cls = (pc >= -10) ? "ok" : (pc >= -30 ? "alerte" : "ko");
+  const txt = (pc >= 0 ? "+" : "") + fmt(pc, 0) + " %";
+  return '<span class="badge ' + cls + '">' + txt + '</span>';
+}
+
+function rendreResultats() {
+  const sc = scenarioActif();
+  const r = calculer(sc);
+  const z = $("zoneResultats");
+  const s = r.saisies;
+  let h = "";
+
+  if (r.vide) {
+    z.innerHTML = '<div class="notice">Renseigner les données du bâtiment pour obtenir les résultats.</div>';
+    $("zoneMethodo").innerHTML = "";
+    rendreEnteteImpression(sc);
+    return;
+  }
+
+  // ---- Besoins ----
+  h += '<h3>Besoins ECS</h3><div class="synth">';
+  h += carte(fmt(r.besoinJour60) + " <small>L/j à 60 °C</small>", "Besoin journalier (" + fmt(r.besoinJour40) + " L/j à 40 °C)");
+  if (r.type === "logement") {
+    h += carte(fmt(r.v10) + " <small>L à 60 °C</small>", "Pointe 10 min (COSTIC)");
+    h += carte(fmt(r.v1h) + " <small>L à 60 °C</small>", "Pointe 1 h (COSTIC)");
+  } else {
+    h += carte(fmt(r.vPointe60) + " <small>L à 60 °C</small>", "Pointe : " + ech(r.pointeLib));
+  }
+  h += '</div>';
+  if (r.type === "logement") {
+    h += '<div class="notice">' + fmt(r.n) + " logements, " + fmt(r.ns, 1) + " logements standards (coefficients " +
+      (s.parc === "social" ? "parc social" : "parc privé") + " [G1]). Pointe 2 h : " + fmt(r.v2h) + " L à 60 °C.</div>";
+  } else if (r.lignes.length > 1) {
+    h += '<div class="notice">Détail : ' + r.lignes.map(l => ech(l.lib) + " " + fmt(l.v40) + " L (" + ech(l.det) + ")").join(" ; ") + ", à 40 °C.</div>";
+  }
+  if (r.p10minSante) {
+    h += '<div class="notice">Pointe 10 min santé (formule COSTIC/SOCOL, n = lits) : ' + fmt(r.p10minSante) + " L à 60 °C.</div>";
+  }
+
+  // ---- Stockage / production ----
+  h += '<h3>Stockage et production</h3>';
+  if (r.type === "logement") {
+    if (r.mode === "accumulation") {
+      h += '<div class="synth">';
+      h += carte(fmt(r.vAcc) + " <small>L</small>", "Volume d'accumulation (besoins journaliers maximaux = 2 x moyens [S1])");
+      h += carte(fmt(r.pAcc, 1) + " <small>kW</small>", "Puissance de reconstitution en " + r.trAcc + " h (régime 10/60 °C)");
+      h += '</div>';
+    } else {
+      h += '<table><thead><tr><th class="num">Volume total (L)</th><th class="num">Puissance échangeur (kW)</th><th>Observation</th></tr></thead><tbody>';
+      for (const c of r.couples) {
+        h += '<tr><td class="num">' + fmt(c.v) + '</td><td class="num">' + fmt(c.p, 1) + '</td><td>' + (c.horsMin ? "Sous le volume minimal" : "") + '</td></tr>';
+      }
+      h += '</tbody></table>';
+      h += '<div class="notice">Couples équivalents P = ' + r.pFormule.a + ' x V^' + r.pFormule.b + ' x Ns (abaque COSTIC [S1], régime 10/60 °C, valable au-delà de 10 logements standards) : choisir selon la place disponible et la puissance mobilisable. ';
+      if (r.vMin) h += 'Volume minimal en mode "arrêts de circulation" : ' + fmt(r.vMin) + ' L ([S1] p. 23' + (r.pBoucleRech ? ', pertes de bouclage ' + fmt(r.pBoucleRech, 2) + ' kW réchauffées par la production' : '') + '). ';
+      h += 'Production instantanée pure (déconseillée sans stockage [S1]) : ' + fmt(r.qInst) + ' L/h à 60 °C, soit ' + fmt(r.pInst) + ' kW.</div>';
+      if (r.pBoucleRech > 0) {
+        h += '<div class="live">Bouclage réchauffé par la production : ajouter environ 2,5 x les pertes du bouclage, soit + <b>' + fmt(2.5 * r.pBoucleRech, 1) + ' kW</b> [S1] p. 41 (3 à 5 x selon le raccordement du retour, [B1] fig. 82).</div>';
+      }
+    }
+  } else {
+    h += '<div class="synth">';
+    h += carte(fmt(r.vReco) + " <small>L</small>", "Volume de stockage recommandé (volume équilibré : " + fmt(r.vEquilibre) + " L)");
+    h += carte(fmt(r.pReco, 1) + " <small>kW</small>", "Puissance de production associée");
+    h += '</div>';
+    h += '<table><thead><tr><th class="num">Volume (L)</th><th class="num">Puissance requise (kW)</th></tr></thead><tbody>';
+    for (const c of r.couples.filter(c => c.v <= Math.max(2.5 * r.vEquilibre, 800) && c.p > 0)) {
+      h += '<tr' + (c.v === r.vReco ? ' class="reco"' : '') + '><td class="num">' + fmt(c.v) + '</td><td class="num">' + fmt(c.p, 1) + '</td></tr>';
+    }
+    h += '</tbody></table>';
+    h += '<div class="notice">Méthode du bilan sur la pointe [S2] : la puissance couvre le complément de la pointe non fourni par le stockage (efficacité ' + s.coefR + '), la reconstitution en ' + r.tr + ' h (' + fmt(r.pReconst, 1) + ' kW mini) et le besoin moyen journalier (' + fmt(r.pJourMoy, 1) + ' kW mini). Accumulation journalière complète : ' + fmt(r.vAccJour) + ' L.</div>';
+  }
+
+  // ---- Bouclage ----
+  h += '<h3>Bouclage</h3>';
+  if (!r.bcl) {
+    h += '<div class="notice">Non calculé (longueur aller nulle).</div>';
+  } else if (r.bcl.erreur) {
+    h += '<div class="regwarn">' + ech(r.bcl.erreur) + '</div>';
+  } else {
+    const b = r.bcl;
+    h += '<div class="synth">';
+    h += carte(fmt(b.qRetenu) + " <small>L/h</small>", "Débit de bouclage retenu");
+    h += carte(fmt(b.pertes) + " <small>W</small>", "Pertes du réseau bouclé (" + fmt(b.pAller) + " W aller + " + fmt(b.pRetour) + " W retour)");
+    h += carte("Cuivre " + b.tube.di + "/" + b.tube.de, "Retour de bouclage indicatif (v = " + fmt(b.vitesse, 2) + " m/s)");
+    h += '</div>';
+    h += '<div class="notice">Débit issu des pertes : ' + fmt(b.qPertes) + ' L/h (Q = P / (1,16 x ' + b.chute + ' K), [B1]) ; débit plancher à 0,2 m/s dans le retour retenu : ' + fmt(b.qMin) + ' L/h (NF DTU 60.11). Pertes calculées en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour sur ' + fmt(b.Lr) + ' m.</div>';
+    h += '<div class="live">Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102).' +
+      (s.bMat === "cuivre" ? " Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent (corrosion-érosion) [B1]." : "") + '</div>';
+    if (b.depasse) h += '<div class="regwarn">Débit supérieur à la capacité du plus gros diamètre de la table : fractionner en plusieurs boucles.</div>';
+  }
+
+  // ---- Vérification existant ----
+  const vv = s.vVol, vp = s.vPui, vd = s.vDebit;
+  if (vv > 0 || vd > 0 || vp > 0) {
+    h += '<h3>Vérification de l\'installation existante</h3><table><thead>';
+    h += '<tr><th>Grandeur</th><th class="num">Existant</th><th class="num">Calculé</th><th>Écart</th></tr></thead><tbody>';
+    if (vv > 0) {
+      let vRef = null, note = "";
+      if (r.type === "logement") {
+        if (r.mode === "accumulation") { vRef = r.vAcc; }
+        else {
+          const pNec = r.ns * r.pFormule.a * Math.pow(vv, r.pFormule.b) + 2.5 * r.pBoucleRech;
+          note = "Avec ce volume, puissance nécessaire : " + fmt(pNec, 1) + " kW" + (r.pBoucleRech > 0 ? " (bouclage inclus)" : "") + ".";
+          if (r.vMin) vRef = r.vMin;
+        }
+      } else { vRef = r.vReco; }
+      if (vRef) {
+        const pc = (vv - vRef) / vRef * 100;
+        h += '<tr><td>Volume de stockage</td><td class="num">' + fmt(vv) + ' L</td><td class="num">' + fmt(vRef) + ' L</td><td>' + badgeEcart(pc) + '</td></tr>';
+      }
+      if (note) h += '<tr><td colspan="4"><span class="hint">' + note + '</span></td></tr>';
+    }
+    if (vp > 0) {
+      let pRef = null;
+      if (r.type === "logement") {
+        pRef = (r.mode === "accumulation") ? r.pAcc : r.ns * r.pFormule.a * Math.pow(Math.max(vv, 100), r.pFormule.b) + 2.5 * r.pBoucleRech;
+      } else {
+        pRef = (vv > 0) ? r.pFn(vv) : r.pReco;
+      }
+      const pc = (vp - pRef) / pRef * 100;
+      h += '<tr><td>Puissance de production' + (vv > 0 ? " (pour le volume existant)" : "") + '</td><td class="num">' + fmt(vp, 1) + ' kW</td><td class="num">' + fmt(pRef, 1) + ' kW</td><td>' + badgeEcart(pc) + '</td></tr>';
+    }
+    if (vd > 0 && r.bcl && !r.bcl.erreur) {
+      const pc = (vd - r.bcl.qRetenu) / r.bcl.qRetenu * 100;
+      h += '<tr><td>Débit de bouclage</td><td class="num">' + fmt(vd) + ' L/h</td><td class="num">' + fmt(r.bcl.qRetenu) + ' L/h</td><td>' + badgeEcart(pc) + '</td></tr>';
+    }
+    h += '</tbody></table><div class="notice">Appréciation indicative : vert si l\'existant atteint la valeur calculée (à 10 % près), orange jusqu\'à 30 % en dessous, rouge au-delà.</div>';
+  }
+
+  for (const a of r.avert) h += '<div class="regwarn">' + ech(a) + '</div>';
+  z.innerHTML = h;
+  rendreMethodo(r);
+  rendreEnteteImpression(sc);
+}
+
+function rendreMethodo(r) {
+  const s = r.saisies;
+  let h = "<ul>";
+  if (r.type === "logement") {
+    h += "<li>Besoins et pointes : méthode COSTIC, guide ADEME/COSTIC 2016 \"Les besoins d'eau chaude sanitaire en habitat individuel et collectif\" (valeurs mesurées, pointes à 60 °C) et guide ADEME/EDF/GRDF/COSTIC 2019 \"Le dimensionnement des systèmes de production d'ECS\" (couples volume/puissance, régime 10/60 °C).</li>";
+    h += "<li>Besoin moyen : " + s.ratioStd + " L/j/logement standard à 60 °C ; " + fmt(r.ns, 1) + " logements standards (coefficients d'équivalence " + (s.parc === "social" ? "parc social" : "parc privé") + ").</li>";
+  } else {
+    h += "<li>Besoins journaliers : étude COSTIC/GRDF/ADEME 2020 \"Vers une meilleure connaissance des besoins d'ECS en tertiaire\" (ratios mesurés, exprimés à 40 °C).</li>";
+    h += "<li>Stockage : méthode du bilan sur la période de pointe (type ThermExcel/ECSTHERM, non normative) ; efficacité de stockage " + s.coefR + ", reconstitution en " + r.tr + " h, stockage à " + s.tsto + " °C, eau froide " + s.tef + " °C.</li>";
+    h += "<li>Pointe retenue : " + ech(r.pointeLib) + ".</li>";
+  }
+  h += "<li>Bouclage : guide COSTIC/ADEME 2021 \"La conception des réseaux bouclés d'ECS\" (méthode NF DTU 60.11 P1-2) : Q = pertes / (1,16 x chute), chute maxi " + s.bChute + " K, vitesse retour 0,2 à 0,5 m/s (0,3 m/s conseillé en cuivre), pertes en classe d'isolation " + s.bClasse + " (k maxi NF EN 12828).</li>";
+  h += "<li>Réglementation : arrêté du 30 novembre 2005 (art. 36 arrêté du 23/06/1978 modifié) : 50 °C mini en tout point du réseau bouclé, 55 °C mini en sortie de stockage au-delà de 400 L (ou montée quotidienne), antennes non bouclées 3 L maxi (8 m maxi selon NF DTU 60.11) ; 50 °C maxi aux puisages des pièces de toilette.</li>";
+  const flags = [];
+  if (r.type !== "logement" && !["restaurant", "sport"].includes(r.usage)) flags.push("la répartition de la pointe (" + ech(r.pointeLib) + ") est une hypothèse de travail non normée, à ajuster au projet");
+  if (r.usage === "hotel" && s.standing === "e12") flags.push("ratio 1-2 étoiles sans valeur mesurée fiable (confiance faible)");
+  if (r.usage === "hotel" && s.standing === "e5") flags.push("ratio 5 étoiles issu d'un échantillon de 4 hôtels (confiance moyenne)");
+  if (r.usage === "scolaire" && s.internes > 0) flags.push("ratio internat issu d'une source belge (Energie+), confiance moyenne");
+  if (flags.length) h += "<li><b>Hypothèses à valider :</b> " + flags.join(" ; ") + ".</li>";
+  h += "<li>Sources détaillées et niveaux de confiance : docs/methodes.md du projet.</li>";
+  h += "</ul>";
+  $("zoneMethodo").innerHTML = h;
+}
+
+function rendreEnteteImpression(sc) {
+  $("impressionMeta").textContent =
+    (sc.nom || "Scénario sans nom") + " - " + USAGES[sc.usage].label +
+    " - édité le " + new Date().toLocaleDateString("fr-FR") +
+    " - Calculette ECS et Bouclage (valeurs par défaut sourcées COSTIC/ADEME, voir docs/methodes.md)";
+}
+
+/* ---- Synthèse texte (presse-papiers) ---- */
+function syntheseTexte() {
+  const sc = scenarioActif();
+  const r = calculer(sc);
+  const s = r.saisies;
+  const L = [];
+  L.push("FICHE DE DIMENSIONNEMENT ECS ET BOUCLAGE");
+  L.push("Projet : " + (sc.nom || "(sans nom)"));
+  L.push("Usage : " + USAGES[sc.usage].label);
+  L.push("Date : " + new Date().toLocaleDateString("fr-FR"));
+  L.push("");
+  if (r.vide) { L.push("(données non renseignées)"); return L.join("\n"); }
+  L.push("BESOINS ECS");
+  L.push("- Besoin journalier : " + fmt(r.besoinJour60) + " L/j à 60 °C (" + fmt(r.besoinJour40) + " L/j à 40 °C)");
+  if (r.type === "logement") {
+    L.push("- " + fmt(r.n) + " logements, " + fmt(r.ns, 1) + " logements standards (" + (s.parc === "social" ? "parc social" : "parc privé") + ")");
+    L.push("- Pointe 10 min : " + fmt(r.v10) + " L à 60 °C ; pointe 1 h : " + fmt(r.v1h) + " L ; pointe 2 h : " + fmt(r.v2h) + " L (COSTIC)");
+  } else {
+    L.push("- Pointe : " + r.pointeLib + " soit " + fmt(r.vPointe60) + " L à 60 °C");
+  }
+  L.push("");
+  L.push("STOCKAGE ET PRODUCTION");
+  if (r.type === "logement") {
+    if (r.mode === "accumulation") {
+      L.push("- Accumulation : " + fmt(r.vAcc) + " L, reconstitution " + fmt(r.pAcc, 1) + " kW en " + r.trAcc + " h (COSTIC 2019)");
+    } else {
+      L.push("- Couples volume/puissance (abaque COSTIC 2019, régime 10/60 °C) :");
+      for (const c of r.couples.slice(0, 8)) L.push("    " + fmt(c.v) + " L -> " + fmt(c.p, 1) + " kW" + (c.horsMin ? " (sous volume minimal)" : ""));
+      if (r.vMin) L.push("- Volume minimal (arrêts de circulation) : " + fmt(r.vMin) + " L");
+      if (r.pBoucleRech > 0) L.push("- Surpuissance bouclage réchauffé par la production : +" + fmt(2.5 * r.pBoucleRech, 1) + " kW (2,5 x pertes)");
+    }
+  } else {
+    L.push("- Volume recommandé : " + fmt(r.vReco) + " L (volume équilibré " + fmt(r.vEquilibre) + " L), puissance associée " + fmt(r.pReco, 1) + " kW");
+    L.push("- Méthode du bilan de pointe, efficacité stockage " + s.coefR + ", reconstitution " + r.tr + " h, stockage " + s.tsto + " °C, eau froide " + s.tef + " °C");
+  }
+  L.push("");
+  L.push("BOUCLAGE");
+  if (r.bcl && !r.bcl.erreur) {
+    const b = r.bcl;
+    L.push("- Pertes du réseau bouclé : " + fmt(b.pertes) + " W (" + fmt(b.pAller) + " aller + " + fmt(b.pRetour) + " retour), classe " + b.classe + ", ambiance " + fmt(s.bTamb) + " °C");
+    L.push("- Débit de bouclage : " + fmt(b.qRetenu) + " L/h (chute " + b.chute + " K ; plancher 0,2 m/s : " + fmt(b.qMin) + " L/h)");
+    L.push("- Retour indicatif : cuivre " + b.tube.di + "/" + b.tube.de + " (v = " + fmt(b.vitesse, 2) + " m/s)");
+    L.push("- Puissance de compensation : " + fmt(b.pertes / 1000, 2) + " kW");
+  } else {
+    L.push("- Non calculé");
+  }
+  L.push("");
+  L.push("Méthodes : COSTIC/ADEME 2016-2019-2021, arrêté du 30/11/2005, NF DTU 60.11. Valeurs par défaut sourcées, modifiées le cas échéant (voir docs/methodes.md). Pré-dimensionnement à valider par étude détaillée.");
+  return L.join("\n");
+}
+
+async function copierSynthese() {
+  const txt = syntheseTexte();
+  try {
+    await navigator.clipboard.writeText(txt);
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+  }
+  $("btnExport").textContent = "Synthèse copiée !";
+  setTimeout(() => { $("btnExport").textContent = "Copier la synthèse"; }, 1800);
+}
+
+/* ---- Thème clair/sombre (même mécanique que le Sélectionneur de radiateurs) ---- */
+const ICONES_THEME = {
+  lune: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+  soleil: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>'
+};
+function appliquerTheme(t) {
+  document.documentElement.dataset.theme = t;
+  const b = $("btnTheme");
+  b.innerHTML = ICONES_THEME[t === "dark" ? "soleil" : "lune"];
+  b.title = t === "dark" ? "Passer en thème clair" : "Passer en thème sombre";
+}
+function themeMemorise() { try { return localStorage.getItem("calculette_ecs_theme"); } catch (e) { return null; } }
+function initTheme() {
+  const systeme = () => matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  appliquerTheme(themeMemorise() || systeme());
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ev => {
+    if (!themeMemorise()) appliquerTheme(ev.matches ? "dark" : "light");
+  });
+  $("btnTheme").addEventListener("click", () => {
+    const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    try { localStorage.setItem("calculette_ecs_theme", t); } catch (e) {}
+    appliquerTheme(t);
+  });
+}
+
+function rendreTout() {
+  rendreOnglets();
+  rendreFormulaire();
+  rendreResultats();
+}
+
+function initialiser() {
+  chargerEtat();
+  initTheme();
+  $("inpProjet").addEventListener("input", () => {
+    scenarioActif().nom = $("inpProjet").value;
+    sauverEtat(); rendreOnglets(); rendreEnteteImpression(scenarioActif());
+  });
+  $("selUsage").addEventListener("change", () => {
+    scenarioActif().usage = $("selUsage").value;
+    sauverEtat(); rendreFormulaire(); rendreResultats();
+  });
+  $("btnImprimer").addEventListener("click", () => window.print());
+  $("btnExport").addEventListener("click", copierSynthese);
+  rendreTout();
+}
+document.addEventListener("DOMContentLoaded", initialiser);
+</script>
+</body>
+</html>
