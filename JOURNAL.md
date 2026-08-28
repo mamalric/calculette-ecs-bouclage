@@ -9,6 +9,8 @@
 - Rayons adoucis (10 px pour les panneaux, 7 px pour les contrôles), ombre légère sous l'en-tête collant, filet olive à gauche de la ligne retenue dans les tableaux.
 - Contraste vérifié par calcul sur les couples de texte réellement utilisés : tout passe le seuil AA de 4,5 dans les deux thèmes (le plus serré, les aides sur en-tête de tableau, est à 4,82 en clair et 5,18 en sombre). C'est ce qui a conduit à foncer `--discret` en clair et à l'éclaircir en sombre : ces aides portent les sources et les ratios, elles doivent rester lisibles.
 - Ménage : `--basse-fond` et `--ok`, hérités du projet radiateurs, n'étaient utilisés nulle part et ont été retirés des trois blocs de palette. Contrôle croisé automatique : aucune variable CSS utilisée sans être définie.
+- Cases à cocher redessinées : `accent-color` laissait le rendu natif du navigateur, qui ignore le thème et jurait avec les autres champs. Reprise de la mécanique du Sélectionneur de radiateurs (`appearance:none`, boîte aux couleurs du thème, coche en image de fond), plus un survol et un anneau de focus au clavier. La coche ne pouvant pas prendre une variable CSS, il y a une règle par thème.
+- Leçon de méthode pour la suite : vérifier un état visuel par capture d'écran juste après un changement de classe donne un résultat faux, la transition CSS étant encore en cours (une case décochée est apparue verte, et `getComputedStyle` renvoyait la couleur intermédiaire). Les quatre états ont donc été contrôlés transitions neutralisées.
 - Vérification : 7 usages x 4 modes sans erreur ni valeur invalide, dans les deux thèmes.
 - Non fusionné dans `main` : à valider visuellement avant publication.
 

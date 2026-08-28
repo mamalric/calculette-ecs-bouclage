@@ -188,7 +188,25 @@ button.reset{
 .grilleTypo .fld label{font-size:11.5px}
 .grilleTypo input{width:100%}
 .chkligne{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--encre-2);cursor:pointer;margin:2px 0}
-.chkligne input{width:15px;height:15px;accent-color:var(--primaire);cursor:pointer}
+/* Case à cocher redessinée : accent-color laisse le rendu natif du navigateur, qui ignore
+   le thème. On reprend donc la mécanique du Sélectionneur de radiateurs, avec la coche en
+   image de fond (elle ne peut pas prendre une variable CSS, d'où une règle par thème). */
+.chkligne input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;margin:0;flex:none;
+  width:16px;height:16px;border:1.5px solid var(--ligne);border-radius:5px;
+  background-color:var(--champ);background-repeat:no-repeat;background-position:center;
+  background-size:11px 11px;cursor:pointer;
+  transition:background-color var(--vitesse),border-color var(--vitesse),box-shadow var(--vitesse);
+}
+.chkligne input[type=checkbox]:hover{border-color:var(--primaire)}
+.chkligne input[type=checkbox]:focus-visible{outline:none;border-color:var(--primaire);box-shadow:0 0 0 3px var(--anneau)}
+.chkligne input[type=checkbox]:checked{
+  background-color:var(--primaire);border-color:var(--primaire);
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+[data-theme="dark"] .chkligne input[type=checkbox]:checked{
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312180a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
 
 /* ---- bandeaux d'information et d'alerte */
 .live{
