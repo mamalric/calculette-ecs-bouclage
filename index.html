@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculette ECS et Bouclage</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237da32f'/%3E%3Cg transform='translate(4 4)' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z'/%3E%3Cpath d='M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97'/%3E%3C/g%3E%3C/svg%3E">
 <style>
 /* Calculette ECS et Bouclage : outil autonome, aucun serveur, aucune requête externe.
    Thème repris du Sélectionneur de radiateurs (2026-07-07) : palette papier/encre,
@@ -145,7 +146,7 @@ main.cols{
 }
 .panel h2 small{font-weight:400;color:var(--discret);font-size:12px}
 .panel .body{padding:16px}
-h3{margin:14px 0 8px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--discret)}
+h3{margin:14px 0 8px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--discret);display:flex;align-items:center;gap:6px}
 h3:first-child{margin-top:0}
 
 /* ---- champs */
@@ -176,9 +177,12 @@ button.reset{
 
 /* ---- bandeaux d'information et d'alerte */
 .live{
+  display:flex;align-items:flex-start;gap:9px;
   background:var(--note-fond);border:1px solid var(--note-bord);
   border-radius:var(--rayon);padding:10px 14px;margin:10px 0 4px;font-size:13px;color:var(--encre);
 }
+.live .ico{color:var(--moyenne);margin-top:2px}
+.regwarn .ico{margin-top:1px}
 .regwarn{
   display:flex;align-items:flex-start;gap:9px;background:var(--haute-fond);border:1px solid var(--haute);
   color:var(--haute);border-radius:var(--rayon);padding:10px 14px;font-size:13px;font-weight:600;margin:10px 0 4px;
@@ -280,23 +284,23 @@ footer.pied{
 <body>
 
 <header>
-  <span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg></span>
+  <span class="logo" data-ico="gouttes" data-ico-taille="18"></span>
   <div class="titre">
     <h1>Calculette ECS et Bouclage</h1>
     <span class="sub">Stockage ECS et dimensionnement du bouclage - hypothèses sourcées COSTIC/ADEME, modifiables</span>
   </div>
   <span class="espace"></span>
-  <button type="button" class="btn sec noprint" id="btnImprimer" title="Fiche de synthèse via l'impression du navigateur">Imprimer / PDF</button>
-  <button type="button" class="btn sec noprint" id="btnExport" title="Copier la fiche de synthèse au format texte">Copier la synthèse</button>
+  <button type="button" class="btn sec noprint" id="btnImprimer" data-ico="imprimer" title="Fiche de synthèse via l'impression du navigateur">Imprimer / PDF</button>
+  <button type="button" class="btn sec noprint" id="btnExport" data-ico="presse_papier" title="Copier la fiche de synthèse au format texte">Copier la synthèse</button>
   <button type="button" class="bouton-icone noprint" id="btnTheme" aria-label="Changer de thème"></button>
-  <button type="button" class="bouton-icone noprint" id="btnStats" aria-label="À propos et sources" title="À propos de l'outil"></button>
+  <button type="button" class="bouton-icone noprint" id="btnStats" data-ico="engrenage" aria-label="À propos et sources" title="À propos de l'outil"></button>
 </header>
 
 <dialog id="dlgStats" class="modale noprint">
   <div class="modale-tete">
-    <h2 id="dlgStatsTitre">À propos de l'outil</h2>
+    <h2 id="dlgStatsTitre" data-ico="engrenage" data-ico-taille="15">À propos de l'outil</h2>
     <span class="espace"></span>
-    <button type="button" class="bouton-icone" id="btnStatsFermer" aria-label="Fermer"></button>
+    <button type="button" class="bouton-icone" id="btnStatsFermer" data-ico="fermer" aria-label="Fermer"></button>
   </div>
   <div class="modale-corps" id="statsCorps"></div>
 </dialog>
@@ -313,7 +317,7 @@ footer.pied{
   <main class="cols">
     <div id="zoneSaisie">
       <div class="panel">
-        <h2>Projet et usage</h2>
+        <h2 data-ico="dossier">Projet et usage</h2>
         <div class="body">
           <div class="fld" style="margin-bottom:12px">
             <label for="inpProjet">Nom du projet / scénario</label>
@@ -328,7 +332,7 @@ footer.pied{
       </div>
 
       <div class="panel">
-        <h2>Hypothèses générales</h2>
+        <h2 data-ico="reglages">Hypothèses générales</h2>
         <div class="body">
           <div class="grid" id="zoneHypotheses"></div>
           <div class="notice">Les valeurs préremplies sont des hypothèses par défaut sourcées (voir "Méthode et hypothèses"), à ajuster selon le projet. Un champ sur fond ambre a été modifié par rapport au défaut.</div>
@@ -336,7 +340,7 @@ footer.pied{
       </div>
 
       <div class="panel">
-        <h2>Bouclage</h2>
+        <h2 data-ico="boucle">Bouclage</h2>
         <div class="body">
           <div class="grid" id="zoneBouclage"></div>
           <div class="notice">Renseigner une longueur aller nulle pour ignorer le calcul de bouclage.</div>
@@ -344,7 +348,7 @@ footer.pied{
       </div>
 
       <div class="panel">
-        <h2>Vérification d'une installation existante <small>facultatif, laisser à 0 sinon</small></h2>
+        <h2 data-ico="verifier">Vérification d'une installation existante <small>facultatif, laisser à 0 sinon</small></h2>
         <div class="body">
           <div class="grid" id="zoneVerif"></div>
         </div>
@@ -353,11 +357,11 @@ footer.pied{
 
     <div id="colResultats">
       <div class="panel">
-        <h2>Résultats</h2>
+        <h2 data-ico="jauge">Résultats</h2>
         <div class="body" id="zoneResultats"></div>
       </div>
       <div class="panel">
-        <h2>Méthode et hypothèses</h2>
+        <h2 data-ico="livre">Méthode et hypothèses</h2>
         <div class="body methodo" id="zoneMethodo"></div>
       </div>
     </div>
@@ -987,7 +991,7 @@ function rendreOnglets() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "onglet" + (i === etat.actif ? " active" : "");
-    b.textContent = sc.nom || ("Scénario " + (i + 1));
+    b.innerHTML = ico(ICONE_USAGE[sc.usage] || "dossier", 15) + ech(sc.nom || ("Scénario " + (i + 1)));
     b.title = USAGES[sc.usage].label;
     b.addEventListener("click", () => { etat.actif = i; sauverEtat(); rendreTout(); });
     nav.appendChild(b);
@@ -997,7 +1001,7 @@ function rendreOnglets() {
   nav.appendChild(esp);
   const add = document.createElement("button");
   add.type = "button";
-  add.className = "btn sec mini"; add.textContent = "+ Nouveau";
+  add.className = "btn sec mini"; add.innerHTML = ico("plus", 14) + "Nouveau";
   add.addEventListener("click", () => {
     etat.scenarios.push(scenarioVierge());
     etat.actif = etat.scenarios.length - 1;
@@ -1006,7 +1010,7 @@ function rendreOnglets() {
   nav.appendChild(add);
   const dup = document.createElement("button");
   dup.type = "button";
-  dup.className = "btn sec mini"; dup.textContent = "Dupliquer";
+  dup.className = "btn sec mini"; dup.innerHTML = ico("copier", 14) + "Dupliquer";
   dup.title = "Copier le scénario courant pour comparer des hypothèses";
   dup.addEventListener("click", () => {
     const copie = JSON.parse(JSON.stringify(scenarioActif()));
@@ -1019,7 +1023,7 @@ function rendreOnglets() {
   if (etat.scenarios.length > 1) {
     const del = document.createElement("button");
     del.type = "button";
-    del.className = "btn danger mini"; del.textContent = "Supprimer";
+    del.className = "btn danger mini"; del.innerHTML = ico("corbeille", 14) + "Supprimer";
     del.addEventListener("click", () => {
       if (!confirm("Supprimer le scénario courant ?")) return;
       etat.scenarios.splice(etat.actif, 1);
@@ -1199,7 +1203,7 @@ function rendreResultats() {
   }
 
   // ---- Besoins ----
-  h += '<h3>Besoins ECS</h3><div class="synth">';
+  h += '<h3>' + ico("gouttes", 13) + 'Besoins ECS</h3><div class="synth">';
   h += carte(fmt(r.besoinJour60) + " <small>L/j à 60 °C</small>", "Besoin journalier (" + fmt(r.besoinJour40) + " L/j à 40 °C)");
   if (r.type === "logement") {
     h += carte(fmt(r.v10) + " <small>L à 60 °C</small>", "Pointe 10 min (COSTIC)");
@@ -1219,7 +1223,7 @@ function rendreResultats() {
   }
 
   // ---- Stockage / production ----
-  h += '<h3>Stockage et production</h3>';
+  h += '<h3>' + ico("ballon", 13) + 'Stockage et production</h3>';
   if (r.type === "logement") {
     if (r.mode === "accumulation") {
       h += '<div class="synth">';
@@ -1236,7 +1240,7 @@ function rendreResultats() {
       if (r.vMin) h += 'Volume minimal en mode "arrêts de circulation" : ' + fmt(r.vMin) + ' L ([S1] p. 23' + (r.pBoucleRech ? ', pertes de bouclage ' + fmt(r.pBoucleRech, 2) + ' kW réchauffées par la production' : '') + '). ';
       h += 'Production instantanée pure (déconseillée sans stockage [S1]) : ' + m3(r.qInst) + ' m³/h à 60 °C, soit ' + fmt(r.pInst) + ' kW.</div>';
       if (r.pBoucleRech > 0) {
-        h += '<div class="live">Bouclage réchauffé par la production : ajouter environ 2,5 x les pertes du bouclage, soit + <b>' + fmt(2.5 * r.pBoucleRech, 1) + ' kW</b> [S1] p. 41 (3 à 5 x selon le raccordement du retour, [B1] fig. 82).</div>';
+        h += '<div class="live">' + ico("info", 16) + '<span>Bouclage réchauffé par la production : ajouter environ 2,5 x les pertes du bouclage, soit + <b>' + fmt(2.5 * r.pBoucleRech, 1) + ' kW</b> [S1] p. 41 (3 à 5 x selon le raccordement du retour, [B1] fig. 82).</span></div>';
       }
     }
   } else {
@@ -1260,7 +1264,7 @@ function rendreResultats() {
     h += '</tbody></table>';
     h += '<div class="notice">Comparatif : chaque mode est chiffré avec l\'efficacité de stockage de sa technologie et sa propre fenêtre de recharge. La ligne surlignée est le mode retenu, avec vos valeurs saisies.</div>';
     if (r.accuInutile) {
-      h += '<div class="live">Sur cet usage, l\'accumulation demande à la fois plus de volume et plus de puissance que la semi-accumulation : les pointes sont trop rapprochées (fenêtre de recharge de ' + fmt(r.comparatif.find(c => c.mode === "accumulation").tr, 1) + ' h seulement) pour que le stockage journalier soit reconstitué à faible puissance.</div>';
+      h += '<div class="live">' + ico("info", 16) + '<span>Sur cet usage, l\'accumulation demande à la fois plus de volume et plus de puissance que la semi-accumulation : les pointes sont trop rapprochées (fenêtre de recharge de ' + fmt(r.comparatif.find(c => c.mode === "accumulation").tr, 1) + ' h seulement) pour que le stockage journalier soit reconstitué à faible puissance.</span></div>';
     }
     if (r.mode !== "instantane") {
       h += '<div class="notice"><b>Courbe volume / puissance du mode retenu</b> (efficacité ' + fmtEff(s.coefR) + ', recharge ' + fmt(r.tr, 1) + ' h). Au-delà du palier, agrandir le ballon n\'apporte plus rien.</div>';
@@ -1280,11 +1284,11 @@ function rendreResultats() {
   }
 
   // ---- Bouclage ----
-  h += '<h3>Bouclage</h3>';
+  h += '<h3>' + ico("boucle", 13) + 'Bouclage</h3>';
   if (!r.bcl) {
     h += '<div class="notice">Non calculé (longueur aller nulle).</div>';
   } else if (r.bcl.erreur) {
-    h += '<div class="regwarn">' + ech(r.bcl.erreur) + '</div>';
+    h += '<div class="regwarn">' + ico("attention", 17) + ech(r.bcl.erreur) + '</div>';
   } else {
     const b = r.bcl;
     h += '<div class="synth">';
@@ -1293,15 +1297,15 @@ function rendreResultats() {
     h += carte("Cuivre " + b.tube.di + "/" + b.tube.de, "Retour de bouclage indicatif (v = " + fmt(b.vitesse, 2) + " m/s)");
     h += '</div>';
     h += '<div class="notice">Débit issu des pertes : ' + m3(b.qPertes) + ' m³/h (Q = P / (1,16 x ' + b.chute + ' K), [B1]) ; débit plancher à 0,2 m/s dans le retour retenu : ' + m3(b.qMin) + ' m³/h (NF DTU 60.11). Pertes calculées en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour sur ' + fmt(b.Lr) + ' m.</div>';
-    h += '<div class="live">Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102).' +
-      (s.bMat === "cuivre" ? " Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent (corrosion-érosion) [B1]." : "") + '</div>';
-    if (b.depasse) h += '<div class="regwarn">Débit supérieur à la capacité du plus gros diamètre de la table : fractionner en plusieurs boucles.</div>';
+    h += '<div class="live">' + ico("info", 16) + '<span>Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102).' +
+      (s.bMat === "cuivre" ? " Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent (corrosion-érosion) [B1]." : "") + '</span></div>';
+    if (b.depasse) h += '<div class="regwarn">' + ico("attention", 17) + 'Débit supérieur à la capacité du plus gros diamètre de la table : fractionner en plusieurs boucles.</div>';
   }
 
   // ---- Vérification existant ----
   const vv = s.vVol, vp = s.vPui, vd = s.vDebitM3 * 1000; // saisi en m3/h, comparé en L/h
   if (vv > 0 || vd > 0 || vp > 0) {
-    h += '<h3>Vérification de l\'installation existante</h3><table><thead>';
+    h += '<h3>' + ico("verifier", 13) + 'Vérification de l\'installation existante</h3><table><thead>';
     h += '<tr><th>Grandeur</th><th class="num">Existant</th><th class="num">Calculé</th><th>Écart</th></tr></thead><tbody>';
     if (vv > 0) {
       let vRef = null, note = "";
@@ -1336,7 +1340,7 @@ function rendreResultats() {
     h += '</tbody></table><div class="notice">Appréciation indicative : vert si l\'existant atteint la valeur calculée (à 10 % près), orange jusqu\'à 30 % en dessous, rouge au-delà.</div>';
   }
 
-  for (const a of r.avert) h += '<div class="regwarn">' + ech(a) + '</div>';
+  for (const a of r.avert) h += '<div class="regwarn">' + ico("attention", 17) + ech(a) + '</div>';
   z.innerHTML = h;
   rendreMethodo(r);
   rendreEnteteImpression(sc);
@@ -1445,12 +1449,32 @@ async function copierSynthese() {
     ta.value = txt; document.body.appendChild(ta);
     ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
   }
-  $("btnExport").textContent = "Synthèse copiée !";
-  setTimeout(() => { $("btnExport").textContent = "Copier la synthèse"; }, 1800);
+  // innerHTML et non textContent : le bouton porte une icône qu'il faut redessiner.
+  $("btnExport").innerHTML = ico("valider", 16) + "Synthèse copiée !";
+  setTimeout(() => { $("btnExport").innerHTML = ico("presse_papier", 16) + "Copier la synthèse"; }, 1800);
 }
 
-/* ---- Icônes (tracés Lucide, aucune requête externe) ---- */
+/* ---- Icônes (tracés Lucide, inlinés : aucune requête externe) ---- */
 const TRACES_ICONES = {
+  gouttes: '<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/>',
+  ballon: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/>',
+  boucle: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  jauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  verifier: '<path d="m8 11 2 2 4-4"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  imprimer: '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
+  presse_papier: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  copier: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  corbeille: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  valider: '<path d="M20 6 9 17l-5-5"/>',
+  attention: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  immeuble: '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+  bureau: '<rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  hotel: '<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>',
+  couverts: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  sante: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+  scolaire: '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+  sport: '<path d="M14.4 14.4 9.6 9.6"/><path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z"/><path d="m21.5 21.5-1.4-1.4"/><path d="M3.9 3.9 2.5 2.5"/><path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z"/>',
   lune: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   soleil: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   engrenage: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
@@ -1467,6 +1491,21 @@ function ico(nom, taille) {
     + ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
     + ' aria-hidden="true">' + traces + '</svg>';
 }
+// Tout élément portant data-ico reçoit l'icône Lucide correspondante en tête de son contenu.
+// Évite de recopier des SVG entiers dans le HTML : un nom d'icône suffit.
+function poserIcones(racine) {
+  (racine || document).querySelectorAll("[data-ico]").forEach(el => {
+    if (el.dataset.icoPose) return;            // ne pas doubler si la fonction est rappelée
+    const taille = +el.dataset.icoTaille || 16;
+    el.insertAdjacentHTML("afterbegin", ico(el.dataset.ico, taille));
+    el.dataset.icoPose = "1";
+  });
+}
+// Icône associée à chaque usage, pour identifier un scénario d'un coup d'oeil dans les onglets.
+const ICONE_USAGE = {
+  logement: "immeuble", bureaux: "bureau", hotel: "hotel", restaurant: "couverts",
+  sante: "sante", scolaire: "scolaire", sport: "sport"
+};
 
 /* ---- Thème clair/sombre (même mécanique que le Sélectionneur de radiateurs) ---- */
 function appliquerTheme(t) {
@@ -1495,7 +1534,9 @@ function initTheme() {
    puissent pas mentir après l'ajout d'un usage, d'un ratio ou d'une source. */
 const APP = {
   nom: "Calculette ECS et Bouclage",
-  version: "v0",
+  // "+dev" tant que le travail n'est pas fusionné dans main : le panneau dit ainsi
+  // clairement si l'on regarde la version publiée ou une version en cours.
+  version: "v0+dev",
   maj: "2026-08-28",
   methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
   icones: "Lucide, licence ISC"
@@ -1594,9 +1635,6 @@ function renderStats() {
 
 function initStats() {
   const dlg = $("dlgStats");
-  $("btnStats").innerHTML = ico("engrenage", 16);
-  $("btnStatsFermer").innerHTML = ico("fermer", 16);
-  $("dlgStatsTitre").innerHTML = ico("engrenage", 15) + "À propos de l'outil";
   $("btnStats").addEventListener("click", () => { renderStats(); dlg.showModal(); });
   $("btnStatsFermer").addEventListener("click", () => dlg.close());
   // Clic en dehors du panneau : la zone hors contenu appartient au <dialog> lui-même.
@@ -1611,6 +1649,7 @@ function rendreTout() {
 
 function initialiser() {
   chargerEtat();
+  poserIcones();
   initTheme();
   initStats();
   $("inpProjet").addEventListener("input", () => {

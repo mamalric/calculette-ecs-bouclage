@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-28 (icônes, sur `dev`)
+- Ajout d'un favicon, sur le même principe que le Sélectionneur de radiateurs : SVG en data URI, icône Lucide "droplets" blanche sur carré olive arrondi, aucune requête externe.
+- Structuration de l'interface par icônes Lucide inlinées, avec le mécanisme `data-ico` du projet radiateurs : `poserIcones()` parcourt les éléments porteurs de l'attribut et injecte l'icône en tête. Le HTML ne contient donc jamais de SVG recopié, seulement un nom d'icône.
+- Icônes posées : logo (gouttes), en-têtes des quatre panneaux de saisie et des deux panneaux de résultats, titres des sections de résultats (besoins, stockage, bouclage, vérification), boutons (imprimer, copier, nouveau, dupliquer, supprimer), bandeaux d'information et d'alerte.
+- Chaque usage a son icône (immeuble, mallette, lit, couverts, coeur, diplôme, haltère), affichée dans l'onglet du scénario : le type de bâtiment se lit d'un coup d'oeil quand plusieurs scénarios sont ouverts.
+- Deux ajustements induits : les bandeaux `.live` passent en flex avec le texte dans un `<span>` pour que l'icône ne soit pas suivie d'un texte qui remonte dessous, et le bouton "Copier la synthèse" redessine son icône après le message de confirmation (il utilisait `textContent`, qui l'effaçait).
+- Version affichée dans le panneau "À propos" : `v0+dev` tant que le travail n'est pas fusionné dans `main`, pour distinguer la version publiée de la version en cours.
+- Vérification : 7 usages x 4 modes sans erreur, 20 icônes posées, aucune icône manquante ni inconnue, favicon présent.
+- À faire : fusionner `dev` dans `main` pour que le site en ligne reçoive ces changements (les Pages servent `main`).
+
 ## 2026-08-28 (mise en ligne)
 - L'utilisateur a déployé la page sur GitHub Pages : https://mamalric.github.io/calculette-ecs-bouclage/, servie depuis `main` à la racine, HTTPS forcé, build en succès. C'est donc la v0 étiquetée qui est en ligne.
 - Le dépôt est passé de privé à public à cette occasion (condition des Pages gratuites). Tout le contenu du dépôt est désormais lisible publiquement : `idee-origine.md`, `JOURNAL.md`, `FICHE.md` et `CLAUDE.md` compris. Rien de confidentiel ne s'y trouve (aucune donnée client, aucun secret), mais les conventions de travail et les autres projets cités y sont visibles.
