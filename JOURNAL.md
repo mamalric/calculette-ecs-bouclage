@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-28 (thèmes clair et sombre, sur `dev`)
+- Diagnostic du rendu jugé peu esthétique : la palette héritée teintait d'olive les surfaces neutres elles-mêmes (`--papier-2` et `--papier-3` étaient des verts pâles). Résultat, un ensemble uniformément verdâtre où l'accent de marque ne ressortait plus, et une hiérarchie illisible en sombre (panneau, en-tête et champ de saisie à moins de trois points d'écart).
+- Correctif de fond : l'olive #7da32f reste la couleur de marque (logo, favicon, accents, ligne retenue, focus) mais les surfaces neutres le sont vraiment. Les niveaux fond < papier < papier-2 sont espacés pour que la hiérarchie se lise.
+- Les champs de saisie ont leur propre surface `--champ` au lieu de partager celle des en-têtes de panneaux : blancs en clair, un cran au-dessus du panneau en sombre. Ajout d'un survol et d'un anneau de focus.
+- Rayons adoucis (10 px pour les panneaux, 7 px pour les contrôles), ombre légère sous l'en-tête collant, filet olive à gauche de la ligne retenue dans les tableaux.
+- Contraste vérifié par calcul sur les couples de texte réellement utilisés : tout passe le seuil AA de 4,5 dans les deux thèmes (le plus serré, les aides sur en-tête de tableau, est à 4,82 en clair et 5,18 en sombre). C'est ce qui a conduit à foncer `--discret` en clair et à l'éclaircir en sombre : ces aides portent les sources et les ratios, elles doivent rester lisibles.
+- Ménage : `--basse-fond` et `--ok`, hérités du projet radiateurs, n'étaient utilisés nulle part et ont été retirés des trois blocs de palette. Contrôle croisé automatique : aucune variable CSS utilisée sans être définie.
+- Vérification : 7 usages x 4 modes sans erreur ni valeur invalide, dans les deux thèmes.
+- Non fusionné dans `main` : à valider visuellement avant publication.
+
 ## 2026-08-28 (icônes, sur `dev`)
 - Ajout d'un favicon, sur le même principe que le Sélectionneur de radiateurs : SVG en data URI, icône Lucide "droplets" blanche sur carré olive arrondi, aucune requête externe.
 - Structuration de l'interface par icônes Lucide inlinées, avec le mécanisme `data-ico` du projet radiateurs : `poserIcones()` parcourt les éléments porteurs de l'attribut et injecte l'icône en tête. Le HTML ne contient donc jamais de SVG recopié, seulement un nom d'icône.

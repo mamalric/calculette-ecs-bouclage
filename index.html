@@ -10,60 +10,71 @@
    Thème repris du Sélectionneur de radiateurs (2026-07-07) : palette papier/encre,
    primaire olive, clair par défaut et sombre via [data-theme="dark"] ou le réglage système.
    Police : pile Inter sans lien Google Fonts (Segoe UI prend le relais sur Windows). */
+/* Palette : l'olive #7da32f reste la couleur de marque (logo, favicon, accents), mais les
+   surfaces neutres le sont vraiment. Teinter aussi les gris de vert donnait un ensemble
+   verdâtre et terne où l'accent ne ressortait plus. Les niveaux fond < papier < papier-2
+   sont espacés pour que la hiérarchie se lise, et les champs de saisie ont leur propre
+   surface (--champ) au lieu de partager celle des en-têtes. */
 :root{
   color-scheme: light;
-  --fond:#f5f5f3;
+  --fond:#eef0ed;
   --papier:#ffffff;
-  --papier-2:#f6f9ec;
-  --papier-3:#eef5dc;
-  --encre:#231f20;
-  --encre-2:#58595b;
-  --discret:#8a8c8f;
-  --ligne:#e4e5e7;
-  --ligne-2:#efeff0;
+  --papier-2:#f4f6f3;
+  --papier-3:#e8ebe6;
+  --champ:#ffffff;
+  --champ-actif:#ffffff;
+  --encre:#1e2220;
+  --encre-2:#525754;
+  /* Les aides sous les champs portent les sources et les ratios : elles doivent rester
+     lisibles, d'où un gris assez foncé pour tenir le contraste AA malgré leur petite taille. */
+  --discret:#676e69;
+  --ligne:#dde0dc;
+  --ligne-2:#ebeee9;
   --primaire:#7da32f;
-  --primaire-fond:#eef5dc;
-  --primaire-encre:#55701f;
-  --lien:#55701f;
-  --haute:#c4423b;
-  --haute-fond:#fbe9e7;
-  --moyenne:#d08a1e;
-  --moyenne-fond:#fbf1df;
-  --basse-fond:#f0f0ee;
-  --note-fond:#fbf1df;
-  --note-bord:#d08a1e;
-  --ok:#7da32f;
+  --primaire-fond:#eaf3d8;
+  --primaire-bord:#c3daa0;
+  --primaire-encre:#4c6a19;
+  --lien:#4c6a19;
+  --haute:#bc3f38;
+  --haute-fond:#fbeae8;
+  --moyenne:#b87a15;
+  --moyenne-fond:#fdf3e2;
+  --note-fond:#fdf6e6;
+  --note-bord:#e2b45f;
   --sur-primaire:#ffffff;
-  --rayon:6px;
-  --rayon-s:6px;
-  --ombre:0 1px 2px rgba(35,31,32,.06), 0 4px 16px rgba(35,31,32,.06);
+  --anneau:rgba(125,163,47,.20);
+  --rayon:10px;
+  --rayon-s:7px;
+  --ombre:0 1px 2px rgba(30,34,32,.05), 0 6px 20px rgba(30,34,32,.06);
   --vitesse:.12s;
 }
 [data-theme="dark"]{
   color-scheme: dark;
-  --fond:#131412;
-  --papier:#1b1c19;
-  --papier-2:#21251b;
-  --papier-3:#2a2f20;
-  --encre:#edece9;
-  --encre-2:#b5b4b0;
-  --discret:#8b8d90;
-  --ligne:#2e2f2c;
-  --ligne-2:#252624;
+  --fond:#101211;
+  --papier:#1a1d1b;
+  --papier-2:#232725;
+  --papier-3:#2c312e;
+  --champ:#242926;
+  --champ-actif:#2a2f2c;
+  --encre:#e9ebe8;
+  --encre-2:#b2b7b3;
+  --discret:#929991;
+  --ligne:#343a36;
+  --ligne-2:#272c29;
   --primaire:#a5cc52;
-  --primaire-fond:#2b3319;
-  --primaire-encre:#c6e18b;
-  --lien:#b5d178;
-  --haute:#e0736c;
-  --haute-fond:#3a2220;
-  --moyenne:#e0a558;
-  --moyenne-fond:#362a15;
-  --basse-fond:#26272a;
-  --note-fond:#33290f;
-  --note-bord:#b07a24;
-  --ok:#a5cc52;
-  --sur-primaire:#0f141b;
-  --ombre:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  --primaire-fond:#2b3a17;
+  --primaire-bord:#4a6626;
+  --primaire-encre:#c9e58f;
+  --lien:#b8d67c;
+  --haute:#e5837c;
+  --haute-fond:#3b2321;
+  --moyenne:#e3ad63;
+  --moyenne-fond:#382c15;
+  --note-fond:#332a14;
+  --note-bord:#8a6520;
+  --sur-primaire:#12180a;
+  --anneau:rgba(165,204,82,.22);
+  --ombre:0 1px 2px rgba(0,0,0,.35), 0 6px 20px rgba(0,0,0,.30);
 }
 @media (prefers-reduced-motion: reduce){ :root{ --vitesse:0s } *{ animation:none !important; transition:none !important } }
 
@@ -80,8 +91,8 @@ a:hover{text-decoration:underline}
 /* ---- en-tete */
 header{
   display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;
-  padding:11px 22px;background:var(--papier);border-bottom:1px solid var(--ligne);
-  position:sticky;top:0;z-index:6;
+  padding:12px 22px;background:var(--papier);border-bottom:1px solid var(--ligne);
+  position:sticky;top:0;z-index:6;box-shadow:0 1px 3px rgba(0,0,0,.05);
 }
 header .logo{
   width:30px;height:30px;border-radius:var(--rayon-s);background:var(--primaire);color:var(--sur-primaire);
@@ -157,12 +168,16 @@ h3:first-child{margin-top:0}
 .ligne{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 input[type=number],input[type=text],select{
   font:inherit;padding:7px 10px;border:1px solid var(--ligne);border-radius:var(--rayon-s);
-  background-color:var(--papier-2);color:var(--encre);
-  transition:border-color var(--vitesse),background-color var(--vitesse);
+  background-color:var(--champ);color:var(--encre);
+  transition:border-color var(--vitesse),background-color var(--vitesse),box-shadow var(--vitesse);
 }
 input[type=number]{width:110px}
 input[type=text],select{width:100%}
-input[type=number]:focus,input[type=text]:focus,select:focus{outline:none;border-color:var(--primaire);background-color:var(--papier)}
+input[type=number]:hover,input[type=text]:hover,select:hover{border-color:var(--discret)}
+input[type=number]:focus,input[type=text]:focus,select:focus{
+  outline:none;border-color:var(--primaire);background-color:var(--champ-actif);
+  box-shadow:0 0 0 3px var(--anneau);
+}
 input.modifie{background-color:var(--note-fond);border-color:var(--note-bord)}
 .unite{color:var(--discret);font-size:12px}
 button.reset{
@@ -191,7 +206,7 @@ button.reset{
 
 /* ---- cartes de resultats */
 .synth{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:10px}
-.card{background:var(--papier-2);border:1px solid var(--ligne);border-radius:var(--rayon);padding:12px 14px}
+.card{background:var(--papier-2);border:1px solid var(--ligne);border-radius:var(--rayon);padding:13px 15px}
 .card .v{font-size:22px;font-weight:700;color:var(--primaire-encre);line-height:1.2}
 .card .v small{font-size:12px;font-weight:400;color:var(--discret)}
 .card .k{font-size:12px;color:var(--discret);margin-top:2px}
@@ -206,7 +221,7 @@ th{
 td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 tbody tr{transition:background-color var(--vitesse)}
 tbody tr:hover td{background:var(--papier-2)}
-tr.reco td{background:var(--primaire-fond);font-weight:700;color:var(--primaire-encre)}
+tr.reco td{background:var(--primaire-fond);font-weight:700;color:var(--primaire-encre);box-shadow:inset 3px 0 0 var(--primaire)}
 tr.reco:hover td{background:var(--primaire-fond)}
 
 .badge{
@@ -214,7 +229,7 @@ tr.reco:hover td{background:var(--primaire-fond)}
   font-size:11.5px;font-weight:700;letter-spacing:.3px;
   -webkit-print-color-adjust:exact;print-color-adjust:exact;
 }
-.badge.ok{background:var(--primaire-fond);color:var(--primaire-encre);border:1px solid var(--primaire)}
+.badge.ok{background:var(--primaire-fond);color:var(--primaire-encre);border:1px solid var(--primaire-bord)}
 .badge.alerte{background:var(--moyenne-fond);color:var(--moyenne);border:1px solid var(--moyenne)}
 .badge.ko{background:var(--haute-fond);color:var(--haute);border:1px solid var(--haute)}
 
@@ -258,12 +273,13 @@ footer.pied{
 @media print{
   :root,[data-theme="dark"]{
     color-scheme:light;
-    --fond:#fff;--papier:#fff;--papier-2:#f6f9ec;--papier-3:#eef5dc;
-    --encre:#231f20;--encre-2:#58595b;--discret:#6b6d70;
-    --ligne:#c9cbcd;--ligne-2:#dcdee0;
-    --primaire:#7da32f;--primaire-fond:#eef5dc;--primaire-encre:#43590f;--lien:#43590f;
-    --haute:#a8332c;--haute-fond:#fbe9e7;--moyenne:#a06a12;--moyenne-fond:#fbf1df;--ok:#4d6b1c;
-    --basse-fond:#f0f0ee;--note-fond:#fbf1df;--note-bord:#d08a1e;--sur-primaire:#ffffff;--ombre:none;
+    --fond:#fff;--papier:#fff;--papier-2:#f4f6f3;--papier-3:#e8ebe6;
+    --champ:#fff;--champ-actif:#fff;--anneau:transparent;
+    --encre:#1e2220;--encre-2:#4a4f4c;--discret:#636965;
+    --ligne:#c7cbc6;--ligne-2:#dcdfda;
+    --primaire:#7da32f;--primaire-fond:#eaf3d8;--primaire-bord:#a9c67d;--primaire-encre:#3f5a12;--lien:#3f5a12;
+    --haute:#a8332c;--haute-fond:#fbeae8;--moyenne:#96620f;--moyenne-fond:#fdf3e2;
+    --note-fond:#fdf6e6;--note-bord:#c39434;--sur-primaire:#ffffff;--ombre:none;
   }
   body{background:#fff;font-size:11px}
   header{position:static;border-bottom:1px solid var(--ligne)}
@@ -1536,7 +1552,7 @@ const APP = {
   nom: "Calculette ECS et Bouclage",
   // Suffixe "+dev" tant que le travail n'est pas fusionné dans main : le panneau dit
   // ainsi clairement si l'on regarde la version publiée ou une version en cours.
-  version: "v1",
+  version: "v1+dev",
   maj: "2026-08-28",
   methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
   icones: "Lucide, licence ISC"
