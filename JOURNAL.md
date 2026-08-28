@@ -2,6 +2,12 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-28 (mise en ligne)
+- L'utilisateur a déployé la page sur GitHub Pages : https://mamalric.github.io/calculette-ecs-bouclage/, servie depuis `main` à la racine, HTTPS forcé, build en succès. C'est donc la v0 étiquetée qui est en ligne.
+- Le dépôt est passé de privé à public à cette occasion (condition des Pages gratuites). Tout le contenu du dépôt est désormais lisible publiquement : `idee-origine.md`, `JOURNAL.md`, `FICHE.md` et `CLAUDE.md` compris. Rien de confidentiel ne s'y trouve (aucune donnée client, aucun secret), mais les conventions de travail et les autres projets cités y sont visibles.
+- Vérification de la page en ligne : titre, version v0, 7 usages, 9 sources et rouage présents, aucune erreur console. Le `localStorage` fonctionne réellement sur l'origine https, contrairement à l'aperçu local en `file://` où il lève une SecurityError. Les scénarios enregistrés sur le site et ceux du fichier local sont donc deux stocks distincts.
+- Conséquence pour la suite : les Pages servent `main`, le travail sur `dev` n'apparaîtra en ligne qu'après fusion.
+
 ## 2026-08-28 (v0)
 - Ajout du panneau "À propos" ouvert par le rouage en haut à droite, repris du Sélectionneur de radiateurs (même `<dialog>`, mêmes styles, mêmes icônes Lucide inlinées). Contenu : version, périmètre couvert, registre des sources, scénario en cours, informations techniques.
 - Le registre des sources est devenu une donnée (`SOURCES`) au lieu d'un commentaire : les codes [G1], [B1], etc. employés dans les aides et les résultats renvoient à cette liste unique, que le panneau affiche avec les liens. Impossible désormais que la liste diverge de ce que l'outil utilise.

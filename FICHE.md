@@ -8,7 +8,7 @@ cree: 2026-08-28                              # AAAA-MM-JJ
 maj: 2026-08-28                               # AAAA-MM-JJ, mis à jour par Claude Code en fin de session
 tags: [cvc, plomberie, ecs, bouclage, calculette]  # exemple : [cvc, reglementation]
 stack: HTML + CSS + JS vanilla, une seule page, sans build
-lancer: ouvrir index.html dans un navigateur
+lancer: ouvrir index.html, ou https://mamalric.github.io/calculette-ecs-bouclage/
 depot: https://github.com/mamalric/calculette-ecs-bouclage
 ---
 
@@ -24,4 +24,6 @@ Version v0 validée et étiquetée sur `main` (le développement continue sur la
 Confronter les résultats à un projet BET réel et ajuster les hypothèses signalées (fractions de pointe et fenêtres de recharge en tertiaire, ratio hôtel 1-2 étoiles) ; v2 possible : pertes annuelles de bouclage en kWh, export JSON des scénarios.
 
 ## Utilisation
-Aucun prérequis : ouvrir index.html dans un navigateur (fichier autonome, une seule page, fonctionne hors ligne). Les scénarios sont conservés localement (localStorage).
+En ligne : https://mamalric.github.io/calculette-ecs-bouclage/ (GitHub Pages, publié depuis `main`). Hors ligne : ouvrir index.html dans un navigateur, le fichier est autonome et ne fait aucune requête externe. Les scénarios sont conservés dans le navigateur (localStorage), séparément pour chaque origine : ceux saisis sur le site en ligne et ceux saisis sur le fichier local ne se mélangent pas.
+
+Le site sert la branche `main`. Le travail en cours sur `dev` n'apparaît en ligne qu'une fois fusionné dans `main`.
