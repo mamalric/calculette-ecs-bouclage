@@ -18,10 +18,10 @@ depot: https://github.com/mamalric/calculette-ecs-bouclage
 Estimer le besoin de stockage ECS d'un bâtiment (logement, bureaux, hôtel, restaurant, etc.) et dimensionner son bouclage (débit, pertes thermiques, puissance de compensation, diamètre indicatif du retour). Outil de travail pour ingénieur BET fluides / CVC, avec méthodes et hypothèses sourcées (DTU 60.11, COSTIC, guides professionnels) affichées avec chaque résultat.
 
 ## État actuel
-V1 fonctionnelle : 7 usages (logement, bureaux, hôtel, restaurant, santé, scolaire, sport), stockage par méthode COSTIC (logement) ou bilan de pointe (tertiaire), bouclage complet (pertes, débit, diamètre retour, puissance), multi-scénarios, vérification d'existant, impression, thème clair/sombre repris du Sélectionneur de radiateurs. Toutes les valeurs sont sourcées (docs/methodes.md) ; les hypothèses fragiles sont signalées dans l'interface. Vérifiée sur 3 cas types dans le navigateur.
+V1 fonctionnelle : 7 usages (logement, bureaux, hôtel, restaurant, santé, scolaire, sport), stockage par méthode COSTIC (logement) ou bilan de pointe avec choix du mode de production et comparatif des quatre modes (tertiaire), bouclage complet (pertes, débit en m³/h, diamètre retour, puissance), multi-scénarios, vérification d'existant, impression, thème clair/sombre repris du Sélectionneur de radiateurs. Toutes les valeurs sont sourcées (docs/methodes.md) ; les hypothèses non normées sont signalées dans l'interface. Vérifiée sur les 7 usages et les 4 modes dans le navigateur.
 
 ## Prochaine étape
-Confronter les résultats à un projet BET réel et ajuster les hypothèses signalées (fractions de pointe tertiaire, ratio hôtel 1-2 étoiles) ; v2 possible : pertes annuelles de bouclage en kWh, comparateur multi-méthodes, export JSON.
+Confronter les résultats à un projet BET réel et ajuster les hypothèses signalées (fractions de pointe et fenêtres de recharge en tertiaire, ratio hôtel 1-2 étoiles) ; v2 possible : pertes annuelles de bouclage en kWh, export JSON des scénarios.
 
 ## Utilisation
 Aucun prérequis : ouvrir index.html dans un navigateur (fichier autonome, une seule page, fonctionne hors ligne). Les scénarios sont conservés localement (localStorage).

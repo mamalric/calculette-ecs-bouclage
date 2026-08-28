@@ -143,9 +143,32 @@ Modes de production et formules exactes ([S1]) :
 Pour les usages hors habitat, la calculette applique la méthode classique du bilan sur la période de pointe :
 
 - Énergie de la pointe : E_pointe = 1,163e-3 x V_pointe x (Tref - Tef), avec V_pointe le volume puisé pendant la pointe à sa température de référence.
-- Bilan pendant la pointe de durée tp : E_pointe = R x V_stock x (Tsto - Tef) x 1,163e-3 + P x tp. R est le coefficient d'efficacité du stockage (stratification) : 0,80 à 0,95 selon [S2] ("de mauvaise à bonne stratification"), défaut 0,85. Energie+ donne de son côté 0,5 à 0,8 pour un ballon à échangeur : valeur à ajuster selon la technologie.
-- Reconstitution entre deux pointes de durée tr : P x tr supérieur ou égal à R x V_stock x (Tsto - Tef) x 1,163e-3.
-- La puissance requise pour un volume donné est le maximum des deux contraintes ; la calculette présente une gamme de volumes standards avec la puissance associée et met en avant le volume équilibré (les deux contraintes égales).
+- Bilan pendant la pointe de durée tp : E_pointe = R x V_stock x (Tsto - Tef) x 1,163e-3 + P x tp. R est le coefficient d'efficacité du stockage (stratification) : 0,80 à 0,95 selon [S2] ("de mauvaise à bonne stratification"), 0,5 à 0,8 pour un ballon à échangeur incorporé selon Energie+.
+- Reconstitution du stock pendant la fenêtre de recharge tr : P x tr supérieur ou égal à R x V_stock x (Tsto - Tef) x 1,163e-3.
+- La puissance requise pour un volume donné est le maximum des contraintes ; la calculette présente la gamme de volumes standards avec la puissance associée, jusqu'au palier au-delà duquel agrandir le ballon n'apporte plus rien.
+
+#### Modes de production en tertiaire
+
+COSTIC ne publie pas d'abaques volume/puissance par mode hors habitat : la méthode reste le bilan sur la pointe, identique quel que soit le mode. Le mode ne change donc pas la physique, il désigne le point de fonctionnement visé sur la courbe volume/puissance et l'efficacité de stockage de la technologie associée. La calculette affiche les quatre modes en comparatif, chacun avec ses propres hypothèses.
+
+| Mode | Volume visé | Efficacité R par défaut | Fenêtre de recharge |
+|---|---|---|---|
+| Instantané | aucun stockage, P = E_pointe / tp | sans objet (0,90 affiché) | sans objet |
+| Semi-instantané | stock couvrant 25 % de l'énergie de pointe | 0,90 (ballon stratifié sur échangeur externe, [S2] 0,80-0,95) | 4 h |
+| Semi-accumulation | volume au palier de puissance | 0,75 (ballon à échangeur incorporé, Energie+ 0,5-0,8) | 4 h |
+| Accumulation | stock couvrant le besoin journalier | 0,90 (ballon de stockage stratifié, [S2]) | fenêtre par usage, voir ci-dessous |
+
+Les cibles de 25 % pour le semi-instantané et le choix d'associer une technologie à chaque mode sont des conventions de l'outil, pas des valeurs publiées : elles positionnent des points de repère sur une courbe qui, elle, est calculée. L'efficacité reste modifiable pour coller au matériel réel.
+
+Cas de l'instantané : la puissance affichée est la moyenne sur la durée de la pointe. Le débit de pointe instantané est supérieur (facteur 1,3 sur la pointe 10 minutes en habitat, [S1]) : la valeur est à recaler sur le foisonnement réel des puisages. Le guide COSTIC déconseille par ailleurs l'instantané pur sans stockage.
+
+#### Fenêtre de recharge
+
+Hors accumulation, la fenêtre est fixée à 4 heures : on ne dimensionne pas un semi-accumulateur sur le temps disponible avant la pointe suivante mais sur un temps de remontée en température visé, sinon le ballon grossit sans fin pour un gain de puissance négligeable.
+
+En accumulation, la fenêtre est le temps réellement disponible avant la pointe suivante, déduit du profil journalier de l'usage. HYPOTHÈSES DE TRAVAIL NON NORMÉES, signalées comme telles dans l'interface, car ce sont elles qui fixent la puissance en accumulation : bureaux 8 h, hôtel 20 h (une seule pointe le matin), restauration 5 h (deux services), santé 10 h, scolaire 18 h, sport 3 h (créneaux successifs).
+
+Conséquence utile : sur les usages à pointes rapprochées (restauration, sport), l'accumulation demande à la fois plus de volume et plus de puissance que la semi-accumulation, et n'a donc aucun intérêt. La calculette le signale automatiquement.
 
 Profils de pointe par défaut par usage (modifiables dans l'interface) :
 
@@ -208,6 +231,8 @@ Nota : les valeurs issues du NF DTU 60.11 P1-2 et du NF DTU 60.1 (documents AFNO
 - Retour de bouclage : vitesse entre 0,2 m/s (minimum NF DTU 60.11, turbulence, limite biofilm) et 0,5 m/s. Cuivre : moins de 0,3 m/s conseillé en régime permanent (corrosion-érosion).
 - Aller : 1,5 m/s maximum en colonnes et logements, 2 m/s en sous-sol ; collecteur de retour 1 m/s maximum.
 - Diamètre minimal du retour : cuivre 12/14, PVC-C 12,4/16, PEX/PB 13/16, autres matériaux 12 mm intérieur. Acier galvanisé à proscrire en bouclage ([B1] p. 67) et jamais en aval de cuivre.
+Nota d'affichage : les tables sources sont en L/h, mais l'interface exprime tous les débits en m³/h (division par 1000, trois décimales), unité de travail de l'utilisateur.
+
 - Débits par diamètre cuivre ([B1] fig. 45 p. 55), en L/h à 0,2 / 0,3 / 0,5 m/s : 12/14 : 85 / 120 / 200 ; 14/16 : 115 / 165 / 275 ; 16/18 : 145 / 215 / 360 ; 20/22 : 230 / 335 / 565 ; 26/28 : 385 / 570 / 955 ; 33/35 : 620 / 920 / 1535 ; 40/42 : 905 / 1355 / 2260 ; 52/54 : 1530 / 2290 / 3820 ; 60/64 : 2040 / 3050 / 5085.
 - Débit plancher de fait par boucle : 85 à 90 L/h (v = 0,2 m/s dans le diamètre minimal). Aucune source normative publique n'impose un forfait "50 ou 60 L/h par boucle".
 - Antenne non bouclée : 8 m maximum (NF DTU 60.11 P1-2) et 3 L maximum entre production et puisage ([B3]).

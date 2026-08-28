@@ -533,16 +533,60 @@ const RATIOS_LIES = {
 };
 const RATIO_SCOLAIRE_DP = { lfFroid: 5.5, lfECS: 9.5, cpFroid: 10.5, cpECS: 16.5 };
 
+/* Modes de production en tertiaire.
+   COSTIC ne publie pas d'abaques volume/puissance par mode hors habitat : la méthode reste
+   le bilan sur la pointe, identique pour tous les modes. Le mode ne change donc pas la
+   physique, il fixe le point de fonctionnement visé sur la courbe volume/puissance et
+   l'efficacité de stockage de la technologie associée.
+   Efficacités : ballon à échangeur incorporé 0,5 à 0,8 (Energie+) ; ballon bien stratifié
+   chargé par un échangeur externe 0,80 à 0,95 (ThermExcel [S2]). */
+const MODES_TERT = {
+  instantane: { label: "Instantané (échangeur seul, sans stockage)", R: 0.9,
+    aide: "Aucun stockage : toute la pointe passe par l'échangeur. Déconseillé par le guide COSTIC (puissance élevée, cycles courts, faibles taux de charge)." },
+  semiInst: { label: "Semi-instantané (échangeur + petit ballon)", R: 0.9,
+    aide: "Petit ballon écrêtant la pointe, chargé en continu par un échangeur externe. Efficacité 0,90 par défaut (ballon bien stratifié, [S2] 0,80-0,95)." },
+  semiAccu: { label: "Semi-accumulation (échangeur + ballon)", R: 0.75,
+    aide: "Ballon dimensionné sur la pointe. Efficacité 0,75 par défaut (ballon à échangeur incorporé, Energie+ 0,5-0,8) : passer à 0,90 si échangeur externe et ballon stratifié." },
+  accumulation: { label: "Accumulation (stock de la journée, recharge hors pointe)", R: 0.9,
+    aide: "Le stockage couvre le besoin journalier, reconstitué pendant la seule fenêtre de recharge. Efficacité 0,90 par défaut (ballon de stockage stratifié, [S2])." }
+};
+function modeTert(sc) {
+  const v = sc.saisies["modeT"];
+  return (v && MODES_TERT[v]) ? v : "semiAccu";
+}
+const CHAMP_MODE_TERT = {
+  id: "modeT", label: "Mode de production", type: "select", def: "semiAccu",
+  options: Object.keys(MODES_TERT).map(v => ({ v, t: MODES_TERT[v].label })),
+  aide: sc => MODES_TERT[modeTert(sc)].aide +
+    " Le mode ne change pas la méthode (bilan de pointe) : il fixe le point retenu sur la courbe volume/puissance et l'efficacité de stockage par défaut."
+};
+
+/* Fenêtre de recharge en mode accumulation : temps réellement disponible avant la pointe
+   suivante, déduit du profil journalier de l'usage (une seule pointe le matin pour un hôtel,
+   deux services pour un restaurant, créneaux successifs pour un gymnase).
+   HYPOTHÈSE DE TRAVAIL NON NORMÉE, signalée comme telle dans l'interface : c'est elle qui
+   fixe la puissance en accumulation.
+   Hors accumulation, la fenêtre reste à 4 h : on ne dimensionne pas un semi-accumulateur sur
+   le temps disponible mais sur un temps de remontée en température visé, sinon le ballon
+   grossit sans fin pour un gain de puissance négligeable. */
+const FENETRE_RECHARGE = { bureaux: 8, hotel: 20, restaurant: 5, sante: 10, scolaire: 18, sport: 3 };
+const FENETRE_SEMI = 4;
+
 // Hypothèses générales (communes à tous les usages)
 const HYPOTHESES = [
   { id: "tef", label: "Température d'eau froide (dimensionnement)", type: "number", def: 10, min: 1, max: 20, step: 1, unite: "°C",
     aide: "10 °C = base des abaques COSTIC [S1] ; 9 °C = minimum hivernal mesuré [G1] ; 16 °C = moyenne annuelle." },
   { id: "tsto", label: "Température de stockage / production", type: "number", def: 60, min: 55, max: 90, step: 1, unite: "°C",
     aide: "60 °C recommandé [B1] p. 9. Stockage total de 400 L et plus : 55 °C mini permanent ou montée quotidienne (arrêté du 30/11/2005)." },
-  { id: "coefR", label: "Efficacité du stockage (stratification)", type: "number", def: 0.85, min: 0.5, max: 1, step: 0.05, unite: "",
-    aide: "0,80 à 0,95 selon ThermExcel [S2] ; 0,5 à 0,8 pour un ballon à échangeur selon Energie+. Sans objet pour les abaques COSTIC logement (déjà intégré)." },
-  { id: "tr", label: "Durée de reconstitution entre deux pointes", type: "number", def: 4, min: 0.5, max: 12, step: 0.5, unite: "h",
-    aide: "Tertiaire : temps entre deux pointes (4 à 6 h typique). Accumulation nocturne : 6 à 8 h [S1]." }
+  { id: "coefR", label: "Efficacité du stockage (stratification)", type: "number",
+    def: sc => (sc.usage === "logement") ? 0.85 : MODES_TERT[modeTert(sc)].R,
+    min: 0.5, max: 1, step: 0.05, unite: "",
+    aide: "Dépend de la technologie du ballon : 0,5 à 0,8 pour un ballon à échangeur incorporé (Energie+), 0,80 à 0,95 pour un ballon stratifié chargé par un échangeur externe ([S2]). Prérempli par le mode de production, à recaler sur le matériel réel. Sans objet pour les abaques COSTIC logement (déjà intégré)." },
+  { id: "tr", label: "Fenêtre de recharge du stockage", type: "number",
+    def: sc => (sc.usage === "logement") ? 4
+      : (modeTert(sc) === "accumulation" ? (FENETRE_RECHARGE[sc.usage] || 8) : FENETRE_SEMI),
+    min: 0.5, max: 24, step: 0.5, unite: "h",
+    aide: "Temps laissé au générateur pour reconstituer le stock. Hors accumulation : temps de remontée en température visé après la pointe, 4 h par défaut. En accumulation : temps réellement disponible avant la pointe suivante, déduit du profil journalier de l'usage (hypothèse de travail NON normée). À réduire si la recharge est limitée aux heures creuses. Accumulation nocturne en logement : 6 à 8 h [S1]." }
 ];
 
 // Champs bouclage
@@ -568,7 +612,9 @@ const CHAMPS_BOUCLAGE = [
 const CHAMPS_VERIF = [
   { id: "vVol", label: "Volume de stockage existant", type: "number", def: 0, min: 0, step: 50, unite: "L" },
   { id: "vPui", label: "Puissance de production existante", type: "number", def: 0, min: 0, step: 5, unite: "kW" },
-  { id: "vDebit", label: "Débit de bouclage existant", type: "number", def: 0, min: 0, step: 10, unite: "L/h" }
+  // Identifiant distinct de l'ancien "vDebit" en L/h : un scénario enregistré avant le
+  // passage en m3/h repart à zéro au lieu d'être relu dans la mauvaise unité.
+  { id: "vDebitM3", label: "Débit de bouclage existant", type: "number", def: 0, min: 0, step: 0.05, unite: "m³/h" }
 ];
 
 /* ================================================================
@@ -716,22 +762,70 @@ function calcTertiaire(usage, s) {
     r.pointeLib = s.fracPointe + " % du besoin journalier sur " + s.dureePointe + " h";
   }
   r.vPointe60 = convVolume(r.vPointe40, 40, 60, tef);
-  // Bilan sur la pointe [S2] : P x tr = énergie déstockée pendant la pointe
-  r.pReconst = r.ePointe / (r.tp + tr);
-  r.pJourMoy = r.eJour / 24;
-  r.vEquilibre = r.ePointe * tr / ((r.tp + tr) * R * C_EAU * dTsto);
-  r.pFn = function (v) {
-    const pPointe = (r.ePointe - R * v * C_EAU * dTsto) / r.tp;
-    return Math.max(pPointe, r.pReconst, r.pJourMoy, 0);
-  };
-  r.couples = VOLUMES_STD.map(v => ({ v, p: r.pFn(v) }));
-  r.vReco = VOLUMES_STD.find(v => v >= r.vEquilibre) || VOLUMES_STD[VOLUMES_STD.length - 1];
-  r.pReco = r.pFn(r.vReco);
+  r.mode = MODES_TERT[s.modeT] ? s.modeT : "semiAccu";
+  r.pJourMoy = r.eJour / 24;   // plancher absolu : besoin journalier étalé sur 24 h
+  r.pInstant = r.ePointe / r.tp; // instantané : puissance moyenne sur la pointe
+
+  /* Dimensionnement pour un mode donné, à efficacité de stockage et fenêtre de recharge
+     données. Bilan sur la pointe [S2] : le stockage fournit R x V x c x dT, l'échangeur
+     apporte le reste. La même fonction sert au mode retenu (avec les valeurs saisies) et
+     au comparatif des quatre modes (avec les valeurs par défaut de chacun). */
+  function dimensionner(mode, Rm, trm) {
+    const cap = Rm * C_EAU * dTsto;              // kWh stockés par litre
+    const pReconst = r.ePointe / (r.tp + trm);   // remontée du stock avant la pointe suivante
+    // En accumulation le générateur ne fonctionne que pendant la fenêtre de recharge : il doit
+    // y reconstituer la totalité du besoin journalier. Sinon il tourne au fil de la journée.
+    const plancher = (mode === "accumulation") ? r.eJour / trm : Math.max(pReconst, r.pJourMoy);
+    // Volume à partir duquel la puissance atteint ce plancher : au-delà, agrandir le ballon
+    // n'apporte plus rien. Équivaut au volume équilibré quand la recharge est la contrainte.
+    const vPalier = Math.max(0, (r.ePointe - plancher * r.tp) / cap);
+    const cible = (mode === "instantane") ? 0
+      : (mode === "semiInst") ? 0.25 * r.ePointe / cap      // ballon couvrant 25 % de la pointe
+      : (mode === "accumulation") ? r.eJour / cap           // stock couvrant la journée
+      : vPalier;
+    const pFn = v => Math.max((r.ePointe - v * cap) / r.tp, plancher, 0);
+    const v = (mode === "instantane") ? 0
+      : (VOLUMES_STD.find(x => x >= cible) || VOLUMES_STD[VOLUMES_STD.length - 1]);
+    return { mode, R: Rm, tr: trm, cap, pReconst, plancher, vPalier, cible, pFn,
+             v, p: (mode === "instantane") ? r.pInstant : pFn(v) };
+  }
+
+  // Mode retenu : on respecte l'efficacité et la fenêtre effectivement saisies.
+  const d = dimensionner(r.mode, R, tr);
+  r.R = R; r.dTsto = dTsto; r.tr = tr;
+  r.pReconst = d.pReconst;
+  r.pPlancher = d.plancher;
+  r.vEquilibre = d.vPalier;
+  r.vCible = d.cible;
+  r.vReco = d.v;
+  r.pReco = d.p;
+  r.pFn = d.pFn;
   r.vAccJour = r.eJour / (R * C_EAU * dTsto);
+  r.couples = VOLUMES_STD.map(v => ({ v, p: d.pFn(v) }));
+
+  /* Comparatif : chaque mode avec l'efficacité de stockage de sa technologie et sa propre
+     fenêtre de recharge. Le mode retenu y figure avec les valeurs réellement saisies. */
+  r.comparatif = Object.keys(MODES_TERT).map(m => {
+    const dm = (m === r.mode) ? d : dimensionner(m, MODES_TERT[m].R,
+      (m === "accumulation") ? (FENETRE_RECHARGE[usage] || 8) : FENETRE_SEMI);
+    return { mode: m, label: MODES_TERT[m].label, v: dm.v, p: dm.p, R: dm.R, tr: dm.tr };
+  });
+  // Sur un usage à pointes rapprochées (deux services, créneaux successifs), la fenêtre de
+  // recharge est si courte que l'accumulation demande plus de volume ET plus de puissance
+  // que la semi-accumulation : elle n'a alors aucun intérêt.
+  const cAccu = r.comparatif.find(c => c.mode === "accumulation");
+  const cSemi = r.comparatif.find(c => c.mode === "semiAccu");
+  r.accuInutile = !!(cAccu && cSemi && cAccu.p >= cSemi.p && cAccu.v > cSemi.v);
+
+  if (r.mode === "instantane") {
+    r.avert.push("Instantané pur : déconseillé par le guide COSTIC (puissance élevée, cycles courts). La puissance indiquée est la moyenne sur la pointe ; le débit de pointe instantané est supérieur (facteur 1,3 sur la pointe 10 min en habitat [S1]), à recaler sur le foisonnement réel des puisages.");
+  }
+  if (r.mode === "accumulation") {
+    r.avert.push("Accumulation : la puissance suppose la recharge complète du stock pendant la fenêtre de " + fmt(tr, 1) + " h. Le maintien en température du bouclage doit être assuré par un dispositif séparé.");
+  }
   if (usage === "sante" && s.lits > 10) {
     r.p10minSante = 61 * Math.pow(s.lits, 0.503); // L à 60 °C [S4]
   }
-  r.tr = tr;
   return r;
 }
 
@@ -776,12 +870,14 @@ function champsActifs(scenario) {
   const u = USAGES[scenario.usage];
   const liste = [];
   for (const ch of u.champs) liste.push({ ch, cle: scenario.usage + "." + ch.id });
+  if (scenario.usage !== "logement") liste.push({ ch: CHAMP_MODE_TERT, cle: CHAMP_MODE_TERT.id });
   for (const ch of HYPOTHESES) liste.push({ ch, cle: ch.id });
   for (const ch of CHAMPS_BOUCLAGE) liste.push({ ch, cle: ch.id });
   for (const ch of CHAMPS_VERIF) liste.push({ ch, cle: ch.id });
   return liste;
 }
 function defautChamp(scenario, ch) {
+  if (typeof ch.def === "function") return ch.def(scenario); // défaut déduit d'un autre champ
   if (ch.def === null) { // ratio lié à un sous-type
     const lien = RATIOS_LIES[scenario.usage];
     if (lien && lien.champ === ch.id) {
@@ -822,6 +918,10 @@ function fmt(x, dec) {
   if (!isFinite(x)) return "-";
   return x.toLocaleString("fr-FR", { maximumFractionDigits: dec === undefined ? 0 : dec });
 }
+// Les débits sont calculés en L/h (unité des tables COSTIC) mais affichés en m3/h.
+function m3(qLh) { return fmt(qLh / 1000, 3); }
+// Efficacité de stockage : toujours deux décimales, pour que 0,90 et 0,75 s'alignent.
+function fmtEff(x) { return x.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function ech(t) { const d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
 
 function rendreOnglets() {
@@ -935,6 +1035,9 @@ function creerChamp(scenario, ch, cle) {
       scenario.saisies[cle] = sel.value;
       const lien = RATIOS_LIES[scenario.usage];
       if (lien && lien.selon === ch.id) delete scenario.saisies[scenario.usage + "." + lien.champ];
+      // Changer de mode reprend l'efficacité de stockage de la technologie associée
+      // et la fenêtre de recharge correspondante.
+      if (ch.id === "modeT") { delete scenario.saisies["coefR"]; delete scenario.saisies["tr"]; }
       sauverEtat(); rendreFormulaire(); rendreResultats();
     });
     wrap.appendChild(sel);
@@ -981,7 +1084,8 @@ function creerChamp(scenario, ch, cle) {
   }
   if (ch.aide) {
     const a = document.createElement("span");
-    a.className = "hint"; a.textContent = ch.aide;
+    a.className = "hint";
+    a.textContent = (typeof ch.aide === "function") ? ch.aide(scenario) : ch.aide;
     wrap.appendChild(a);
   }
   return wrap;
@@ -1004,6 +1108,7 @@ function rendreFormulaire() {
   for (const ch of USAGES[sc.usage].champs) zu.appendChild(creerChamp(sc, ch, sc.usage + "." + ch.id));
   const zh = $("zoneHypotheses");
   zh.innerHTML = "";
+  if (sc.usage !== "logement") zh.appendChild(creerChamp(sc, CHAMP_MODE_TERT, CHAMP_MODE_TERT.id));
   for (const ch of HYPOTHESES) zh.appendChild(creerChamp(sc, ch, ch.id));
   const zb = $("zoneBouclage");
   zb.innerHTML = "";
@@ -1073,22 +1178,49 @@ function rendreResultats() {
       h += '</tbody></table>';
       h += '<div class="notice">Couples équivalents P = ' + r.pFormule.a + ' x V^' + r.pFormule.b + ' x Ns (abaque COSTIC [S1], régime 10/60 °C, valable au-delà de 10 logements standards) : choisir selon la place disponible et la puissance mobilisable. ';
       if (r.vMin) h += 'Volume minimal en mode "arrêts de circulation" : ' + fmt(r.vMin) + ' L ([S1] p. 23' + (r.pBoucleRech ? ', pertes de bouclage ' + fmt(r.pBoucleRech, 2) + ' kW réchauffées par la production' : '') + '). ';
-      h += 'Production instantanée pure (déconseillée sans stockage [S1]) : ' + fmt(r.qInst) + ' L/h à 60 °C, soit ' + fmt(r.pInst) + ' kW.</div>';
+      h += 'Production instantanée pure (déconseillée sans stockage [S1]) : ' + m3(r.qInst) + ' m³/h à 60 °C, soit ' + fmt(r.pInst) + ' kW.</div>';
       if (r.pBoucleRech > 0) {
         h += '<div class="live">Bouclage réchauffé par la production : ajouter environ 2,5 x les pertes du bouclage, soit + <b>' + fmt(2.5 * r.pBoucleRech, 1) + ' kW</b> [S1] p. 41 (3 à 5 x selon le raccordement du retour, [B1] fig. 82).</div>';
       }
     }
   } else {
     h += '<div class="synth">';
-    h += carte(fmt(r.vReco) + " <small>L</small>", "Volume de stockage recommandé (volume équilibré : " + fmt(r.vEquilibre) + " L)");
-    h += carte(fmt(r.pReco, 1) + " <small>kW</small>", "Puissance de production associée");
+    if (r.mode === "instantane") {
+      h += carte("Sans stockage", "Mode retenu : instantané");
+      h += carte(fmt(r.pInstant, 1) + " <small>kW</small>", "Puissance de l'échangeur (moyenne sur la pointe)");
+    } else {
+      h += carte(fmt(r.vReco) + " <small>L</small>", "Volume de stockage recommandé (cible " + fmt(r.vCible) + " L)");
+      h += carte(fmt(r.pReco, 1) + " <small>kW</small>", "Puissance de production associée");
+    }
     h += '</div>';
-    h += '<table><thead><tr><th class="num">Volume (L)</th><th class="num">Puissance requise (kW)</th></tr></thead><tbody>';
-    for (const c of r.couples.filter(c => c.v <= Math.max(2.5 * r.vEquilibre, 800) && c.p > 0)) {
-      h += '<tr' + (c.v === r.vReco ? ' class="reco"' : '') + '><td class="num">' + fmt(c.v) + '</td><td class="num">' + fmt(c.p, 1) + '</td></tr>';
+    h += '<table><thead><tr><th>Mode de production</th><th class="num">Volume</th><th class="num">Puissance</th><th class="num">Effic.</th><th class="num">Recharge</th></tr></thead><tbody>';
+    for (const c of r.comparatif) {
+      h += '<tr' + (c.mode === r.mode ? ' class="reco"' : '') + '><td>' + ech(c.label) + '</td>' +
+        '<td class="num">' + (c.v > 0 ? fmt(c.v) + " L" : "sans") + '</td>' +
+        '<td class="num">' + fmt(c.p, 1) + ' kW</td>' +
+        '<td class="num">' + fmtEff(c.R) + '</td>' +
+        '<td class="num">' + fmt(c.tr, 1) + ' h</td></tr>';
     }
     h += '</tbody></table>';
-    h += '<div class="notice">Méthode du bilan sur la pointe [S2] : la puissance couvre le complément de la pointe non fourni par le stockage (efficacité ' + s.coefR + '), la reconstitution en ' + r.tr + ' h (' + fmt(r.pReconst, 1) + ' kW mini) et le besoin moyen journalier (' + fmt(r.pJourMoy, 1) + ' kW mini). Accumulation journalière complète : ' + fmt(r.vAccJour) + ' L.</div>';
+    h += '<div class="notice">Comparatif : chaque mode est chiffré avec l\'efficacité de stockage de sa technologie et sa propre fenêtre de recharge. La ligne surlignée est le mode retenu, avec vos valeurs saisies.</div>';
+    if (r.accuInutile) {
+      h += '<div class="live">Sur cet usage, l\'accumulation demande à la fois plus de volume et plus de puissance que la semi-accumulation : les pointes sont trop rapprochées (fenêtre de recharge de ' + fmt(r.comparatif.find(c => c.mode === "accumulation").tr, 1) + ' h seulement) pour que le stockage journalier soit reconstitué à faible puissance.</div>';
+    }
+    if (r.mode !== "instantane") {
+      h += '<div class="notice"><b>Courbe volume / puissance du mode retenu</b> (efficacité ' + fmtEff(s.coefR) + ', recharge ' + fmt(r.tr, 1) + ' h). Au-delà du palier, agrandir le ballon n\'apporte plus rien.</div>';
+      h += '<table><thead><tr><th class="num">Volume (L)</th><th class="num">Puissance requise (kW)</th></tr></thead><tbody>';
+      h += '<tr><td class="num">0</td><td class="num">' + fmt(r.pInstant, 1) + '</td></tr>';
+      for (const c of r.couples) {
+        h += '<tr' + (c.v === r.vReco ? ' class="reco"' : '') + '><td class="num">' + fmt(c.v) + '</td><td class="num">' + fmt(c.p, 1) + '</td></tr>';
+        if (c.p <= r.pPlancher * 1.001 && c.v >= r.vReco) break; // palier atteint, la suite n'apporte rien
+      }
+      h += '</tbody></table>';
+    }
+    h += '<div class="notice">Méthode du bilan sur la pointe [S2], identique pour tous les modes : la puissance couvre le complément de la pointe non fourni par le stockage (efficacité ' + fmtEff(s.coefR) + '), sans descendre sous ' +
+      (r.mode === "accumulation"
+        ? fmt(r.pAccu, 1) + ' kW, recharge de la totalité du besoin journalier pendant la fenêtre de ' + fmt(r.tr, 1) + ' h'
+        : fmt(r.pPlancher, 1) + ' kW (remontée en température en ' + fmt(r.tr, 1) + ' h : ' + fmt(r.pReconst, 1) + ' kW ; besoin journalier étalé sur 24 h : ' + fmt(r.pJourMoy, 1) + ' kW)') +
+      '. Stock couvrant la journée entière : ' + fmt(r.vAccJour) + ' L. Le mode ne change pas la méthode, il désigne le point retenu sur cette courbe.</div>';
   }
 
   // ---- Bouclage ----
@@ -1100,18 +1232,18 @@ function rendreResultats() {
   } else {
     const b = r.bcl;
     h += '<div class="synth">';
-    h += carte(fmt(b.qRetenu) + " <small>L/h</small>", "Débit de bouclage retenu");
+    h += carte(m3(b.qRetenu) + " <small>m³/h</small>", "Débit de bouclage retenu");
     h += carte(fmt(b.pertes) + " <small>W</small>", "Pertes du réseau bouclé (" + fmt(b.pAller) + " W aller + " + fmt(b.pRetour) + " W retour)");
     h += carte("Cuivre " + b.tube.di + "/" + b.tube.de, "Retour de bouclage indicatif (v = " + fmt(b.vitesse, 2) + " m/s)");
     h += '</div>';
-    h += '<div class="notice">Débit issu des pertes : ' + fmt(b.qPertes) + ' L/h (Q = P / (1,16 x ' + b.chute + ' K), [B1]) ; débit plancher à 0,2 m/s dans le retour retenu : ' + fmt(b.qMin) + ' L/h (NF DTU 60.11). Pertes calculées en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour sur ' + fmt(b.Lr) + ' m.</div>';
+    h += '<div class="notice">Débit issu des pertes : ' + m3(b.qPertes) + ' m³/h (Q = P / (1,16 x ' + b.chute + ' K), [B1]) ; débit plancher à 0,2 m/s dans le retour retenu : ' + m3(b.qMin) + ' m³/h (NF DTU 60.11). Pertes calculées en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour sur ' + fmt(b.Lr) + ' m.</div>';
     h += '<div class="live">Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102).' +
       (s.bMat === "cuivre" ? " Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent (corrosion-érosion) [B1]." : "") + '</div>';
     if (b.depasse) h += '<div class="regwarn">Débit supérieur à la capacité du plus gros diamètre de la table : fractionner en plusieurs boucles.</div>';
   }
 
   // ---- Vérification existant ----
-  const vv = s.vVol, vp = s.vPui, vd = s.vDebit;
+  const vv = s.vVol, vp = s.vPui, vd = s.vDebitM3 * 1000; // saisi en m3/h, comparé en L/h
   if (vv > 0 || vd > 0 || vp > 0) {
     h += '<h3>Vérification de l\'installation existante</h3><table><thead>';
     h += '<tr><th>Grandeur</th><th class="num">Existant</th><th class="num">Calculé</th><th>Écart</th></tr></thead><tbody>';
@@ -1143,7 +1275,7 @@ function rendreResultats() {
     }
     if (vd > 0 && r.bcl && !r.bcl.erreur) {
       const pc = (vd - r.bcl.qRetenu) / r.bcl.qRetenu * 100;
-      h += '<tr><td>Débit de bouclage</td><td class="num">' + fmt(vd) + ' L/h</td><td class="num">' + fmt(r.bcl.qRetenu) + ' L/h</td><td>' + badgeEcart(pc) + '</td></tr>';
+      h += '<tr><td>Débit de bouclage</td><td class="num">' + m3(vd) + ' m³/h</td><td class="num">' + m3(r.bcl.qRetenu) + ' m³/h</td><td>' + badgeEcart(pc) + '</td></tr>';
     }
     h += '</tbody></table><div class="notice">Appréciation indicative : vert si l\'existant atteint la valeur calculée (à 10 % près), orange jusqu\'à 30 % en dessous, rouge au-delà.</div>';
   }
@@ -1162,13 +1294,15 @@ function rendreMethodo(r) {
     h += "<li>Besoin moyen : " + s.ratioStd + " L/j/logement standard à 60 °C ; " + fmt(r.ns, 1) + " logements standards (coefficients d'équivalence " + (s.parc === "social" ? "parc social" : "parc privé") + ").</li>";
   } else {
     h += "<li>Besoins journaliers : étude COSTIC/GRDF/ADEME 2020 \"Vers une meilleure connaissance des besoins d'ECS en tertiaire\" (ratios mesurés, exprimés à 40 °C).</li>";
-    h += "<li>Stockage : méthode du bilan sur la période de pointe (type ThermExcel/ECSTHERM, non normative) ; efficacité de stockage " + s.coefR + ", reconstitution en " + r.tr + " h, stockage à " + s.tsto + " °C, eau froide " + s.tef + " °C.</li>";
+    h += "<li>Stockage : méthode du bilan sur la période de pointe (type ThermExcel/ECSTHERM, non normative) ; efficacité de stockage " + fmtEff(s.coefR) + ", fenêtre de recharge " + fmt(r.tr, 1) + " h, stockage à " + s.tsto + " °C, eau froide " + s.tef + " °C.</li>";
+    h += "<li>Mode de production : " + ech(MODES_TERT[r.mode].label) + ". COSTIC ne publiant pas d'abaques par mode hors habitat, le mode ne change pas la méthode : il désigne le point retenu sur la courbe volume/puissance et l'efficacité de stockage de la technologie associée (ballon à échangeur incorporé 0,5-0,8 selon Energie+, ballon stratifié sur échangeur externe 0,80-0,95 selon [S2]).</li>";
     h += "<li>Pointe retenue : " + ech(r.pointeLib) + ".</li>";
   }
   h += "<li>Bouclage : guide COSTIC/ADEME 2021 \"La conception des réseaux bouclés d'ECS\" (méthode NF DTU 60.11 P1-2) : Q = pertes / (1,16 x chute), chute maxi " + s.bChute + " K, vitesse retour 0,2 à 0,5 m/s (0,3 m/s conseillé en cuivre), pertes en classe d'isolation " + s.bClasse + " (k maxi NF EN 12828).</li>";
   h += "<li>Réglementation : arrêté du 30 novembre 2005 (art. 36 arrêté du 23/06/1978 modifié) : 50 °C mini en tout point du réseau bouclé, 55 °C mini en sortie de stockage au-delà de 400 L (ou montée quotidienne), antennes non bouclées 3 L maxi (8 m maxi selon NF DTU 60.11) ; 50 °C maxi aux puisages des pièces de toilette.</li>";
   const flags = [];
   if (r.type !== "logement" && !["restaurant", "sport"].includes(r.usage)) flags.push("la répartition de la pointe (" + ech(r.pointeLib) + ") est une hypothèse de travail non normée, à ajuster au projet");
+  if (r.type !== "logement") flags.push("la fenêtre de recharge (" + fmt(r.tr, 1) + " h) est déduite du profil journalier de l'usage et non d'une source : c'est elle qui fixe le palier de puissance quand le volume augmente");
   if (r.usage === "hotel" && s.standing === "e12") flags.push("ratio 1-2 étoiles sans valeur mesurée fiable (confiance faible)");
   if (r.usage === "hotel" && s.standing === "e5") flags.push("ratio 5 étoiles issu d'un échantillon de 4 hôtels (confiance moyenne)");
   if (r.usage === "scolaire" && s.internes > 0) flags.push("ratio internat issu d'une source belge (Energie+), confiance moyenne");
@@ -1217,15 +1351,25 @@ function syntheseTexte() {
       if (r.pBoucleRech > 0) L.push("- Surpuissance bouclage réchauffé par la production : +" + fmt(2.5 * r.pBoucleRech, 1) + " kW (2,5 x pertes)");
     }
   } else {
-    L.push("- Volume recommandé : " + fmt(r.vReco) + " L (volume équilibré " + fmt(r.vEquilibre) + " L), puissance associée " + fmt(r.pReco, 1) + " kW");
-    L.push("- Méthode du bilan de pointe, efficacité stockage " + s.coefR + ", reconstitution " + r.tr + " h, stockage " + s.tsto + " °C, eau froide " + s.tef + " °C");
+    L.push("- Mode de production : " + MODES_TERT[r.mode].label);
+    if (r.mode === "instantane") {
+      L.push("- Sans stockage, puissance échangeur " + fmt(r.pInstant, 1) + " kW (moyenne sur la pointe, à recaler sur le débit de pointe instantané)");
+    } else {
+      L.push("- Volume recommandé : " + fmt(r.vReco) + " L (cible " + fmt(r.vCible) + " L), puissance associée " + fmt(r.pReco, 1) + " kW");
+    }
+    L.push("- Comparatif des modes (efficacité et fenêtre de recharge propres à chacun) :");
+    for (const c of r.comparatif) {
+      L.push("    " + c.label + " : " + (c.v > 0 ? fmt(c.v) + " L" : "sans stockage") + " / " + fmt(c.p, 1) + " kW"
+        + " (efficacité " + fmtEff(c.R) + ", recharge " + fmt(c.tr, 1) + " h)" + (c.mode === r.mode ? "  <- retenu" : ""));
+    }
+    L.push("- Méthode du bilan de pointe, efficacité stockage " + fmtEff(s.coefR) + ", fenêtre de recharge " + fmt(r.tr, 1) + " h, stockage " + s.tsto + " °C, eau froide " + s.tef + " °C");
   }
   L.push("");
   L.push("BOUCLAGE");
   if (r.bcl && !r.bcl.erreur) {
     const b = r.bcl;
     L.push("- Pertes du réseau bouclé : " + fmt(b.pertes) + " W (" + fmt(b.pAller) + " aller + " + fmt(b.pRetour) + " retour), classe " + b.classe + ", ambiance " + fmt(s.bTamb) + " °C");
-    L.push("- Débit de bouclage : " + fmt(b.qRetenu) + " L/h (chute " + b.chute + " K ; plancher 0,2 m/s : " + fmt(b.qMin) + " L/h)");
+    L.push("- Débit de bouclage : " + m3(b.qRetenu) + " m³/h (chute " + b.chute + " K ; plancher 0,2 m/s : " + m3(b.qMin) + " m³/h)");
     L.push("- Retour indicatif : cuivre " + b.tube.di + "/" + b.tube.de + " (v = " + fmt(b.vitesse, 2) + " m/s)");
     L.push("- Puissance de compensation : " + fmt(b.pertes / 1000, 2) + " kW");
   } else {
