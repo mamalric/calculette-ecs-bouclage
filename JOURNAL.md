@@ -10,7 +10,7 @@
 - Deux ajustements induits : les bandeaux `.live` passent en flex avec le texte dans un `<span>` pour que l'icône ne soit pas suivie d'un texte qui remonte dessous, et le bouton "Copier la synthèse" redessine son icône après le message de confirmation (il utilisait `textContent`, qui l'effaçait).
 - Version affichée dans le panneau "À propos" : `v0+dev` tant que le travail n'est pas fusionné dans `main`, pour distinguer la version publiée de la version en cours.
 - Vérification : 7 usages x 4 modes sans erreur, 20 icônes posées, aucune icône manquante ni inconnue, favicon présent.
-- À faire : fusionner `dev` dans `main` pour que le site en ligne reçoive ces changements (les Pages servent `main`).
+- Fusionné dans `main` et étiqueté `v1` : le site en ligne reçoit le favicon et les icônes.
 
 ## 2026-08-28 (mise en ligne)
 - L'utilisateur a déployé la page sur GitHub Pages : https://mamalric.github.io/calculette-ecs-bouclage/, servie depuis `main` à la racine, HTTPS forcé, build en succès. C'est donc la v0 étiquetée qui est en ligne.
