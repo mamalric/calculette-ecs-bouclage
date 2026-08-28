@@ -2,6 +2,15 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-28 (v2 : aides derrière un bouton (i))
+- Les aides sous les champs (sources, ratios, mises en garde) noyaient le formulaire. Elles passent derrière un bouton (i) placé à droite de chaque intitulé, qui ouvre un panneau flottant avec le titre du champ et le texte. Le formulaire tient désormais sur une fraction de la hauteur précédente.
+- Choix technique : API Popover native plutôt qu'un positionnement maison. Le panneau est rendu dans le calque supérieur, donc jamais rogné par la colonne de résultats qui a son propre défilement, et le navigateur fournit la fermeture par clic extérieur et par Échap. Repli par classe si l'API manque.
+- Le panneau bascule au-dessus du bouton quand il ne tient pas en dessous, et reste borné à l'écran. Il se ferme au défilement (sinon il resterait décalé par rapport à son bouton) et à chaque reconstruction du formulaire.
+- Le bouton passe en ambre quand l'aide signale une hypothèse non normée, une confiance faible ou moyenne, ou une méthode déconseillée. C'était le point de vigilance : masquer ces textes ne devait pas faire disparaître l'avertissement, il reste donc visible sans clic. 4 boutons sur 18 sont en ambre pour un hôtel.
+- Les textes explicatifs de la colonne de résultats sont conservés visibles : ce sont les justifications à reprendre dans une note technique, pas de l'aide à la saisie.
+- Vérification : 7 usages x 4 modes, 394 boutons ouverts un par un, tous avec du contenu, aucune erreur ni valeur invalide. Interactions contrôlées une à une (ouverture, refermeture par le même bouton, changement de bouton, fermeture par le navigateur avec resynchronisation de l'état, défilement, reconstruction).
+- Fusionné dans `main` et étiqueté `v2`.
+
 ## 2026-08-28 (thèmes clair et sombre, sur `dev`)
 - Diagnostic du rendu jugé peu esthétique : la palette héritée teintait d'olive les surfaces neutres elles-mêmes (`--papier-2` et `--papier-3` étaient des verts pâles). Résultat, un ensemble uniformément verdâtre où l'accent de marque ne ressortait plus, et une hiérarchie illisible en sombre (panneau, en-tête et champ de saisie à moins de trois points d'écart).
 - Correctif de fond : l'olive #7da32f reste la couleur de marque (logo, favicon, accents, ligne retenue, focus) mais les surfaces neutres le sont vraiment. Les niveaux fond < papier < papier-2 sont espacés pour que la hiérarchie se lise.

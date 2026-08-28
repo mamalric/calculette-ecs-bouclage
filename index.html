@@ -163,8 +163,47 @@ h3:first-child{margin-top:0}
 /* ---- champs */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .fld{display:flex;flex-direction:column;gap:5px}
-.fld > label{font-size:12px;font-weight:600;color:var(--encre-2);line-height:1.35}
+/* :not(.chkligne) : l'intitulé d'une case à cocher garde sa propre taille, il est porté
+   par le label qui entoure la case et non par un intitulé de champ classique. */
+.fld > label:not(.chkligne),.fld-tete > label:not(.chkligne){font-size:12px;font-weight:600;color:var(--encre-2);line-height:1.35}
+.fld-tete{display:flex;align-items:flex-start;gap:6px}
+.fld-tete > label{flex:1;min-width:0}
 .hint{font-size:11px;color:var(--discret);font-weight:400;line-height:1.45}
+
+/* Bouton (i) : les aides (sources, ratios, mises en garde) sont longues et noyaient le
+   formulaire. Elles passent dans un panneau flottant ouvert à la demande. Le bouton vire à
+   l'ambre quand l'aide signale une hypothèse non normée ou une source peu sûre : cet
+   avertissement doit rester visible sans qu'il faille cliquer. */
+.btn-aide{
+  appearance:none;flex:none;width:17px;height:17px;padding:0;margin-top:1px;
+  border:1px solid var(--ligne);border-radius:50%;background:var(--papier);color:var(--discret);
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:color var(--vitesse),border-color var(--vitesse),background-color var(--vitesse);
+}
+.btn-aide:hover{color:var(--primaire-encre);border-color:var(--primaire);background:var(--primaire-fond)}
+.btn-aide[aria-expanded="true"]{color:var(--sur-primaire);border-color:var(--primaire);background:var(--primaire)}
+.btn-aide.attention{color:var(--moyenne);border-color:var(--note-bord);background:var(--note-fond)}
+.btn-aide.attention:hover{border-color:var(--moyenne)}
+.btn-aide:focus-visible{outline:none;box-shadow:0 0 0 3px var(--anneau)}
+
+/* Panneau d'aide. L'API Popover le place dans le calque supérieur : indispensable ici, la
+   colonne de résultats ayant son propre défilement, un panneau positionné dedans serait
+   rogné. Repli par classe si le navigateur ne connaît pas l'API. */
+#popAide{
+  position:fixed;margin:0;inset:auto;width:max-content;
+  max-width:min(340px,calc(100vw - 24px));
+  padding:12px 14px;border:1px solid var(--ligne);border-radius:var(--rayon);
+  background:var(--papier);color:var(--encre-2);
+  box-shadow:0 2px 6px rgba(0,0,0,.10),0 12px 32px rgba(0,0,0,.16);
+  font-size:12.5px;line-height:1.55;
+}
+#popAide::backdrop{background:transparent}
+#popAide .aide-titre{
+  display:flex;align-items:center;gap:6px;margin-bottom:5px;
+  font-weight:700;color:var(--encre);font-size:12.5px;
+}
+#popAide.sans-popover{display:none}
+#popAide.sans-popover.ouvert{display:block}
 .ligne{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 input[type=number],input[type=text],select{
   font:inherit;padding:7px 10px;border:1px solid var(--ligne);border-radius:var(--rayon-s);
@@ -302,7 +341,7 @@ footer.pied{
   body{background:#fff;font-size:11px}
   header{position:static;border-bottom:1px solid var(--ligne)}
   .tabs,.noprint,.bouton-icone,button.reset,.hint{display:none !important}
-  .modale{display:none !important}
+  .modale,#popAide,.btn-aide{display:none !important}
   .wrap{padding:0 6px}
   main.cols{display:block}
   #colResultats{position:static;max-height:none;overflow:visible}
@@ -338,6 +377,8 @@ footer.pied{
   </div>
   <div class="modale-corps" id="statsCorps"></div>
 </dialog>
+
+<div id="popAide" popover="auto" role="tooltip"></div>
 
 <div class="wrap">
 
@@ -1068,15 +1109,79 @@ function rendreOnglets() {
   }
 }
 
+/* ---- Panneau d'aide contextuelle (bouton (i)) ---- */
+// Une aide qui signale une hypothèse non normée ou une source peu sûre mérite un bouton
+// ambre : l'avertissement doit se voir sans avoir à ouvrir le panneau.
+const AIDE_ALERTE = /non norm|confiance (faible|moyenne)|à valider|déconseill/i;
+let aideCourante = null;
+
+function fermerAide() {
+  const pop = $("popAide");
+  if (!pop) return;
+  if (pop.hidePopover && pop.hasAttribute("popover")) { try { pop.hidePopover(); } catch (e) { /* déjà fermé */ } }
+  pop.classList.remove("ouvert");
+  if (aideCourante) aideCourante.setAttribute("aria-expanded", "false");
+  aideCourante = null;
+}
+
+function placerAide(pop, btn) {
+  const r = btn.getBoundingClientRect();
+  const p = pop.getBoundingClientRect();
+  const marge = 10, ecart = 7;
+  let gauche = Math.min(r.left, window.innerWidth - p.width - marge);
+  gauche = Math.max(marge, gauche);
+  let haut = r.bottom + ecart;
+  if (haut + p.height > window.innerHeight - marge) {
+    const dessus = r.top - p.height - ecart;   // bascule au-dessus si ça ne tient pas dessous
+    haut = dessus >= marge ? dessus : Math.max(marge, window.innerHeight - p.height - marge);
+  }
+  pop.style.left = Math.round(gauche) + "px";
+  pop.style.top = Math.round(haut) + "px";
+}
+
+function basculerAide(btn, titre, texte) {
+  const pop = $("popAide");
+  if (aideCourante === btn) { fermerAide(); return; }
+  fermerAide();
+  pop.innerHTML = '<span class="aide-titre">' + ico("info", 14) + ech(titre) + "</span>" + ech(texte);
+  aideCourante = btn;
+  btn.setAttribute("aria-expanded", "true");
+  if (pop.showPopover && pop.hasAttribute("popover")) pop.showPopover();
+  else pop.classList.add("ouvert");
+  placerAide(pop, btn);   // après affichage : le panneau doit être mesurable
+}
+
+function boutonAide(ch, scenario) {
+  const texte = (typeof ch.aide === "function") ? ch.aide(scenario) : ch.aide;
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "btn-aide noprint" + (AIDE_ALERTE.test(texte) ? " attention" : "");
+  b.innerHTML = ico("info", 11);
+  b.setAttribute("aria-expanded", "false");
+  b.setAttribute("aria-label", "Aide : " + ch.label);
+  b.title = AIDE_ALERTE.test(texte) ? "Hypothèse à vérifier - cliquer pour le détail" : "Méthode et source - cliquer pour le détail";
+  b.addEventListener("click", ev => { ev.stopPropagation(); basculerAide(b, ch.label, texte); });
+  return b;
+}
+
+// En-tête d'un champ : son intitulé et, s'il y a une aide, le bouton (i) qui l'ouvre.
+function enteteChamp(ch, scenario) {
+  const tete = document.createElement("div");
+  tete.className = "fld-tete";
+  const lab = document.createElement("label");
+  lab.textContent = ch.label;
+  tete.appendChild(lab);
+  if (ch.aide) tete.appendChild(boutonAide(ch, scenario));
+  return tete;
+}
+
 function creerChamp(scenario, ch, cle) {
   const wrap = document.createElement("div");
   wrap.className = "fld";
   if (ch.large) wrap.style.gridColumn = "1 / -1";
 
   if (ch.type === "typo") {
-    const lab = document.createElement("label");
-    lab.textContent = ch.label;
-    wrap.appendChild(lab);
+    wrap.appendChild(enteteChamp(ch, scenario));
     const grille = document.createElement("div");
     grille.className = "grilleTypo";
     const base = defautChamp(scenario, ch);
@@ -1112,11 +1217,14 @@ function creerChamp(scenario, ch, cle) {
     });
     ligne.appendChild(inp);
     ligne.appendChild(document.createTextNode(ch.label));
-    wrap.appendChild(ligne);
+    // La case a son intitulé dans son propre label : le bouton (i) se pose à côté.
+    const tete = document.createElement("div");
+    tete.className = "fld-tete";
+    tete.appendChild(ligne);
+    if (ch.aide) tete.appendChild(boutonAide(ch, scenario));
+    wrap.appendChild(tete);
   } else if (ch.type === "select") {
-    const lab = document.createElement("label");
-    lab.textContent = ch.label;
-    wrap.appendChild(lab);
+    wrap.appendChild(enteteChamp(ch, scenario));
     const sel = document.createElement("select");
     for (const o of ch.options) {
       const opt = document.createElement("option");
@@ -1136,9 +1244,7 @@ function creerChamp(scenario, ch, cle) {
     });
     wrap.appendChild(sel);
   } else { // number
-    const lab = document.createElement("label");
-    lab.textContent = ch.label;
-    wrap.appendChild(lab);
+    wrap.appendChild(enteteChamp(ch, scenario));
     const ligne = document.createElement("div");
     ligne.className = "ligne";
     const inp = document.createElement("input");
@@ -1176,16 +1282,11 @@ function creerChamp(scenario, ch, cle) {
     wrap.appendChild(ligne);
     maj();
   }
-  if (ch.aide) {
-    const a = document.createElement("span");
-    a.className = "hint";
-    a.textContent = (typeof ch.aide === "function") ? ch.aide(scenario) : ch.aide;
-    wrap.appendChild(a);
-  }
   return wrap;
 }
 
 function rendreFormulaire() {
+  fermerAide();   // les boutons (i) vont être détruits et reconstruits
   const sc = scenarioActif();
   $("inpProjet").value = sc.nom || "";
   const sel = $("selUsage");
@@ -1570,7 +1671,7 @@ const APP = {
   nom: "Calculette ECS et Bouclage",
   // Suffixe "+dev" tant que le travail n'est pas fusionné dans main : le panneau dit
   // ainsi clairement si l'on regarde la version publiée ou une version en cours.
-  version: "v1+dev",
+  version: "v2",
   maj: "2026-08-28",
   methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
   icones: "Lucide, licence ISC"
@@ -1667,6 +1768,28 @@ function renderStats() {
   $("statsCorps").innerHTML = blocs.join("");
 }
 
+function initAide() {
+  const pop = $("popAide");
+  // Sans l'API Popover, le navigateur ignore l'attribut et laisserait le panneau visible :
+  // on bascule alors sur un affichage piloté par classe.
+  if (!("popover" in HTMLElement.prototype)) {
+    pop.removeAttribute("popover");
+    pop.classList.add("sans-popover");
+    document.addEventListener("click", ev => {
+      if (aideCourante && !pop.contains(ev.target)) fermerAide();
+    });
+    document.addEventListener("keydown", ev => { if (ev.key === "Escape") fermerAide(); });
+  } else {
+    // Fermeture par clic extérieur ou par Échap : c'est le navigateur qui la déclenche,
+    // il faut donc resynchroniser l'état du bouton.
+    pop.addEventListener("toggle", ev => { if (ev.newState === "closed") fermerAide(); });
+  }
+  // Un défilement déplacerait le bouton sans déplacer le panneau : on ferme.
+  // En capture pour attraper aussi le défilement de la colonne de résultats.
+  window.addEventListener("scroll", fermerAide, true);
+  window.addEventListener("resize", fermerAide);
+}
+
 function initStats() {
   const dlg = $("dlgStats");
   $("btnStats").addEventListener("click", () => { renderStats(); dlg.showModal(); });
@@ -1686,6 +1809,7 @@ function initialiser() {
   poserIcones();
   initTheme();
   initStats();
+  initAide();
   $("inpProjet").addEventListener("input", () => {
     scenarioActif().nom = $("inpProjet").value;
     sauverEtat(); rendreOnglets(); rendreEnteteImpression(scenarioActif());
