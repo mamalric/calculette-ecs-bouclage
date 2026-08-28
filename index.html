@@ -223,6 +223,33 @@ footer.pied{
   font-size:12px;color:var(--discret);line-height:1.6;
 }
 
+/* ---- panneau "À propos" (rouage), repris du Sélectionneur de radiateurs */
+.ico{vertical-align:-3px;flex:none}
+.modale{
+  border:none;padding:0;border-radius:var(--rayon);background:var(--papier);color:var(--encre);
+  box-shadow:0 8px 32px rgba(35,31,32,.22);width:min(560px,94vw);max-height:86vh;overflow:hidden;
+}
+[data-theme="dark"] .modale{box-shadow:0 8px 32px rgba(0,0,0,.6);border:1px solid var(--ligne)}
+.modale::backdrop{background:rgba(0,0,0,.45)}
+.modale-tete{
+  display:flex;align-items:center;gap:10px;padding:13px 18px;
+  border-bottom:1px solid var(--ligne);background:var(--papier-2);
+}
+.modale-tete h2{margin:0;font-size:15px;font-weight:700;color:var(--encre);display:flex;align-items:center;gap:9px;border:none;padding:0;background:none}
+.modale-tete .espace{flex:1}
+.modale-corps{padding:16px 18px;overflow:auto;max-height:calc(86vh - 56px);font-size:13px}
+.stats-groupe{margin:0 0 18px}
+.stats-groupe:last-child{margin-bottom:0}
+.stats-groupe h3{
+  margin:0 0 8px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--discret);display:flex;align-items:center;gap:6px;
+}
+.stats-liste{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 16px;margin:0}
+.stats-liste dt{color:var(--encre-2)}
+.stats-liste dd{margin:0;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+/* Les titres de sources sont longs : à gauche et en graisse normale, ils restent lisibles. */
+.stats-liste.gauche dd{text-align:left;font-weight:400}
+
 /* ---- impression : fiche de synthese uniquement, toujours sur fond clair */
 @media print{
   :root,[data-theme="dark"]{
@@ -237,6 +264,7 @@ footer.pied{
   body{background:#fff;font-size:11px}
   header{position:static;border-bottom:1px solid var(--ligne)}
   .tabs,.noprint,.bouton-icone,button.reset,.hint{display:none !important}
+  .modale{display:none !important}
   .wrap{padding:0 6px}
   main.cols{display:block}
   #colResultats{position:static;max-height:none;overflow:visible}
@@ -261,7 +289,17 @@ footer.pied{
   <button type="button" class="btn sec noprint" id="btnImprimer" title="Fiche de synthèse via l'impression du navigateur">Imprimer / PDF</button>
   <button type="button" class="btn sec noprint" id="btnExport" title="Copier la fiche de synthèse au format texte">Copier la synthèse</button>
   <button type="button" class="bouton-icone noprint" id="btnTheme" aria-label="Changer de thème"></button>
+  <button type="button" class="bouton-icone noprint" id="btnStats" aria-label="À propos et sources" title="À propos de l'outil"></button>
 </header>
+
+<dialog id="dlgStats" class="modale noprint">
+  <div class="modale-tete">
+    <h2 id="dlgStatsTitre">À propos de l'outil</h2>
+    <span class="espace"></span>
+    <button type="button" class="bouton-icone" id="btnStatsFermer" aria-label="Fermer"></button>
+  </div>
+  <div class="modale-corps" id="statsCorps"></div>
+</dialog>
 
 <div class="wrap">
 
@@ -335,15 +373,33 @@ footer.pied{
 "use strict";
 /* ================================================================
    SECTION 1 - CONSTANTES ET DONNEES DE REFERENCE (toutes sourcées)
-   Sources détaillées dans docs/methodes.md :
-   [G1] ADEME/COSTIC 2016, besoins ECS habitat.
-   [G2] COSTIC/GRDF/ADEME 2020, besoins ECS tertiaire.
-   [S1] ADEME/EDF/GRDF/COSTIC 2019, dimensionnement production ECS.
-   [S2] ThermExcel, programme ECSTHERM (non normatif).
-   [S3] Cegibat GRDF, dossiers santé et hôtellerie.
-   [B1] COSTIC/ADEME 2021, conception des réseaux bouclés ECS.
-   [B3] Article 36 arrêté du 23/06/1978 modifié par arrêté du 30/11/2005.
+   Détail des valeurs et niveaux de confiance : docs/methodes.md.
    ================================================================ */
+
+/* Registre des sources. Les codes entre crochets employés dans les aides et les résultats
+   renvoient à ce tableau, que le panneau "À propos" affiche tel quel : la liste des sources
+   n'est écrite qu'une fois et ne peut donc pas diverger de ce que l'outil utilise. */
+const SOURCES = [
+  { code: "G1", titre: "ADEME/COSTIC 2016, Les besoins d'ECS en habitat individuel et collectif",
+    url: "https://www.costic.com/ressources/documentation-et-outils/guide-sur-les-besoins-deau-chaude-sanitaire-en-habitat-individuel-et" },
+  { code: "G2", titre: "COSTIC/GRDF/ADEME 2020, Vers une meilleure connaissance des besoins d'ECS en tertiaire",
+    url: "https://www.mapes-pdl.fr/wp-content/uploads/2020/10/ECS-ADEME-COSTIC-Besoins-ECS-tertiaire.pdf" },
+  { code: "S1", titre: "ADEME/EDF/GRDF/COSTIC 2019, Le dimensionnement des systèmes de production d'ECS",
+    url: "https://cegibat.grdf.fr/pdf/7984/3090" },
+  { code: "S2", titre: "ThermExcel, programme ECSTHERM (professionnel, non normatif)",
+    url: "https://www.thermexcel.com/french/divers/ThermExcel%20-%20Production%20ECS.pdf" },
+  { code: "S3", titre: "Cegibat GRDF, dossiers besoins ECS santé et hôtellerie",
+    url: "https://cegibat.grdf.fr/dossier-techniques/besoin-eau-chaude-sanitaire-etablissements-sante" },
+  { code: "S4", titre: "Livret SOCOL 2021, Eau technique",
+    url: "https://www.solaire-collectif.fr/photo/img/Livreteautechnique/210208_Livret-SOCOL-Eau-Technique_VF.pdf" },
+  { code: "B1", titre: "COSTIC/ADEME 2021, La conception des réseaux bouclés d'ECS",
+    url: "https://cegibat.grdf.fr/sites/default/files/assets/GUIDE%20bouclage-Fev%202021-FF.pdf" },
+  { code: "B2", titre: "RAGE/PACTE 2014, Installations d'eau chaude sanitaire",
+    url: "https://www.programmepacte.fr/sites/default/files/pdf/guide-rage-installations-eau-chaude-sanitaire-2014-11_0.pdf" },
+  { code: "B3", titre: "Article 36 de l'arrêté du 23/06/1978 modifié par l'arrêté du 30/11/2005",
+    url: "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006828036" }
+];
+
 const C_EAU = 1.163e-3; // kWh/(L.K), confirmé COSTIC (1,16 arrondi) et ThermExcel
 
 // Coefficients d'équivalence "logement standard" [G1] fig. 13 et 29
@@ -1393,15 +1449,30 @@ async function copierSynthese() {
   setTimeout(() => { $("btnExport").textContent = "Copier la synthèse"; }, 1800);
 }
 
-/* ---- Thème clair/sombre (même mécanique que le Sélectionneur de radiateurs) ---- */
-const ICONES_THEME = {
-  lune: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
-  soleil: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>'
+/* ---- Icônes (tracés Lucide, aucune requête externe) ---- */
+const TRACES_ICONES = {
+  lune: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  soleil: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  engrenage: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
+  fermer: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  livre: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  base_donnees: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
+  dossier: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  reglages: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>'
 };
+function ico(nom, taille) {
+  const traces = TRACES_ICONES[nom] || TRACES_ICONES.info;
+  return '<svg class="ico" width="' + (taille || 16) + '" height="' + (taille || 16) + '" viewBox="0 0 24 24"'
+    + ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
+    + ' aria-hidden="true">' + traces + '</svg>';
+}
+
+/* ---- Thème clair/sombre (même mécanique que le Sélectionneur de radiateurs) ---- */
 function appliquerTheme(t) {
   document.documentElement.dataset.theme = t;
   const b = $("btnTheme");
-  b.innerHTML = ICONES_THEME[t === "dark" ? "soleil" : "lune"];
+  b.innerHTML = ico(t === "dark" ? "soleil" : "lune", 16);
   b.title = t === "dark" ? "Passer en thème clair" : "Passer en thème sombre";
 }
 function themeMemorise() { try { return localStorage.getItem("calculette_ecs_theme"); } catch (e) { return null; } }
@@ -1418,6 +1489,120 @@ function initTheme() {
   });
 }
 
+/* ============================ PANNEAU "À PROPOS" (rouage) ============================
+   Ce que contient l'outil : version, périmètre couvert et registre des sources. Les
+   compteurs sont calculés à l'ouverture, jamais recopiés à la main, pour qu'ils ne
+   puissent pas mentir après l'ajout d'un usage, d'un ratio ou d'une source. */
+const APP = {
+  nom: "Calculette ECS et Bouclage",
+  version: "v0",
+  maj: "2026-08-28",
+  methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
+  icones: "Lucide, licence ISC"
+};
+
+function statsCouverture() {
+  let champsUsage = 0;
+  for (const u of Object.values(USAGES)) champsUsage += u.champs.length;
+  // JSON.stringify laisse tomber les défauts calculés (fonctions) : le poids annoncé est
+  // bien celui des données de référence, pas celui du code.
+  const donnees = JSON.stringify({ USAGES, MODES_TERT, RATIOS_LIES, RATIO_SCOLAIRE_DP,
+    COEF_LGT, CLASSES_ISOL, CUIVRE, VOLUMES_STD, FENETRE_RECHARGE, SOURCES });
+  return {
+    usages: Object.keys(USAGES).length,
+    champs: champsUsage + HYPOTHESES.length + CHAMPS_BOUCLAGE.length + CHAMPS_VERIF.length + 1,
+    modes: Object.keys(MODES_TERT).length,
+    volumes: VOLUMES_STD.length,
+    diametres: CUIVRE.length,
+    classes: Object.keys(CLASSES_ISOL).length,
+    ko: Math.max(1, Math.round(new Blob([donnees]).size / 1024))
+  };
+}
+
+// La clé est échappée ici ; la valeur est fournie déjà prête par l'appelant (elle peut
+// contenir un lien).
+function ligneStat(cle, valeur) {
+  return "<dt>" + ech(String(cle)) + "</dt><dd>" + valeur + "</dd>";
+}
+function groupeStats(titre, icone, lignes, classe) {
+  return '<section class="stats-groupe"><h3>' + ico(icone, 13) + ech(titre) + "</h3>"
+    + '<dl class="stats-liste' + (classe ? " " + classe : "") + '">' + lignes.join("") + "</dl></section>";
+}
+
+function renderStats() {
+  const c = statsCouverture();
+  const sc = scenarioActif();
+  const r = calculer(sc);
+  const blocs = [];
+
+  blocs.push(groupeStats("Application", "info", [
+    ligneStat("Nom", ech(APP.nom)),
+    ligneStat("Version", ech(APP.version)),
+    ligneStat("Dernière mise à jour", ech(APP.maj)),
+    ligneStat("Méthode de calcul", ech(APP.methode)),
+    ligneStat("Fichier", "HTML autonome, hors ligne")
+  ]));
+
+  blocs.push(groupeStats("Périmètre couvert", "base_donnees", [
+    ligneStat("Usages", fmt(c.usages)),
+    ligneStat("Champs de saisie", fmt(c.champs)),
+    ligneStat("Modes de production en tertiaire", fmt(c.modes)),
+    ligneStat("Volumes de ballon proposés", fmt(c.volumes)),
+    ligneStat("Diamètres cuivre (table COSTIC)", fmt(c.diametres)),
+    ligneStat("Classes d'isolation NF EN 12828", fmt(c.classes)),
+    ligneStat("Données de référence embarquées", fmt(c.ko) + " Ko")
+  ]));
+
+  blocs.push(groupeStats("Sources", "livre", SOURCES.map(s => ligneStat("[" + s.code + "]",
+    '<a href="' + ech(s.url) + '" target="_blank" rel="noopener noreferrer">' + ech(s.titre) + "</a>")), "gauche"));
+
+  const lig = [
+    ligneStat("Scénarios en mémoire", fmt(etat.scenarios.length)),
+    ligneStat("Scénario courant", ech(sc.nom || "(sans nom)")),
+    ligneStat("Usage", ech(USAGES[sc.usage].label))
+  ];
+  if (r.vide) {
+    lig.push(ligneStat("État", "données non renseignées"));
+  } else {
+    lig.push(ligneStat("Besoin journalier", fmt(r.besoinJour60) + " L/j à 60 °C"));
+    if (r.type === "logement") {
+      lig.push(ligneStat("Logements standards", fmt(r.ns, 1)));
+    } else {
+      lig.push(ligneStat("Mode retenu", ech(MODES_TERT[r.mode].label)));
+      lig.push(ligneStat("Stockage et puissance", (r.vReco > 0 ? fmt(r.vReco) + " L / " : "sans stockage, ") + fmt(r.pReco, 1) + " kW"));
+    }
+    if (r.bcl && !r.bcl.erreur) lig.push(ligneStat("Débit de bouclage", m3(r.bcl.qRetenu) + " m³/h"));
+  }
+  blocs.push(groupeStats("Scénario en cours", "dossier", lig));
+
+  // Distinguer "rien d'enregistré" de "stockage inaccessible" (navigation privée, file://
+  // verrouillé) : afficher 0 octet dans le second cas laisserait croire à une sauvegarde vide.
+  let stockage;
+  try {
+    const brut = localStorage.getItem(CLE_STOCKAGE);
+    stockage = brut ? fmt(new Blob([brut]).size) + " octets" : "aucun enregistrement";
+  } catch (e) { stockage = "inaccessible ici"; }
+  blocs.push(groupeStats("Technique", "reglages", [
+    ligneStat("Thème", document.documentElement.dataset.theme === "dark" ? "sombre" : "clair"),
+    ligneStat("Scénarios enregistrés localement", ech(stockage)),
+    ligneStat("Icônes", ech(APP.icones)),
+    ligneStat("Données transmises", "aucune, tout le calcul est local")
+  ]));
+
+  $("statsCorps").innerHTML = blocs.join("");
+}
+
+function initStats() {
+  const dlg = $("dlgStats");
+  $("btnStats").innerHTML = ico("engrenage", 16);
+  $("btnStatsFermer").innerHTML = ico("fermer", 16);
+  $("dlgStatsTitre").innerHTML = ico("engrenage", 15) + "À propos de l'outil";
+  $("btnStats").addEventListener("click", () => { renderStats(); dlg.showModal(); });
+  $("btnStatsFermer").addEventListener("click", () => dlg.close());
+  // Clic en dehors du panneau : la zone hors contenu appartient au <dialog> lui-même.
+  dlg.addEventListener("click", ev => { if (ev.target === dlg) dlg.close(); });
+}
+
 function rendreTout() {
   rendreOnglets();
   rendreFormulaire();
@@ -1427,6 +1612,7 @@ function rendreTout() {
 function initialiser() {
   chargerEtat();
   initTheme();
+  initStats();
   $("inpProjet").addEventListener("input", () => {
     scenarioActif().nom = $("inpProjet").value;
     sauverEtat(); rendreOnglets(); rendreEnteteImpression(scenarioActif());

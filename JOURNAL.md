@@ -2,6 +2,14 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-28 (v0)
+- Ajout du panneau "À propos" ouvert par le rouage en haut à droite, repris du Sélectionneur de radiateurs (même `<dialog>`, mêmes styles, mêmes icônes Lucide inlinées). Contenu : version, périmètre couvert, registre des sources, scénario en cours, informations techniques.
+- Le registre des sources est devenu une donnée (`SOURCES`) au lieu d'un commentaire : les codes [G1], [B1], etc. employés dans les aides et les résultats renvoient à cette liste unique, que le panneau affiche avec les liens. Impossible désormais que la liste diverge de ce que l'outil utilise.
+- Tous les compteurs du panneau sont calculés à l'ouverture (7 usages, 54 champs, 4 modes, 9 diamètres cuivre, 6 classes d'isolation, 13 Ko de données de référence) et non recopiés : ils ne peuvent pas mentir après un ajout.
+- Les icônes du thème ont été fusionnées dans un dictionnaire de tracés commun avec une fonction `ico()`, comme dans le projet radiateurs.
+- Version v0 validée : étiquette `v0` posée sur `main`, branche `dev` créée pour la suite.
+- Constat de test : le stockage local est inaccessible dans l'aperçu intégré (SecurityError sur file://), le code le gère déjà par try/catch et le panneau affiche maintenant "inaccessible ici" au lieu d'un trompeur "0 octet". Corollaire : le scénario que je croyais avoir écrasé dans la session précédente ne l'a jamais été, l'aperçu n'ayant aucun accès au localStorage du navigateur de l'utilisateur.
+
 ## 2026-08-28 (suite)
 - Débits affichés en m³/h partout (cartes, notes, vérification d'existant, synthèse) : le L/h des tables COSTIC ne parle pas à l'utilisateur. Le calcul reste en L/h en interne, conversion à l'affichage sur trois décimales pour ne rien perdre sur les petites boucles (0,085 m³/h à 0,2 m/s dans un cuivre 12/14). Le champ de saisie de l'existant a changé d'identifiant (`vDebitM3`) pour qu'un scénario enregistré en L/h ne soit pas relu dans la mauvaise unité.
 - Ajout d'un sélecteur de mode de production en tertiaire (instantané, semi-instantané, semi-accumulation, accumulation), en réponse à la question de l'utilisateur. Le mode ne change pas la méthode (le bilan de pointe reste valable pour tous) : il fixe le point visé sur la courbe volume/puissance et l'efficacité de stockage de la technologie associée. Un comparatif des quatre modes est affiché, chacun avec ses propres hypothèses, le mode retenu surligné.
