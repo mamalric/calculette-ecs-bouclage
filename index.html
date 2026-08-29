@@ -282,7 +282,10 @@ button.reset{
 .sch-cordon{fill:none;stroke:var(--haute);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:2 3}
 .sch-prod{fill:var(--papier);stroke:var(--encre-2);stroke-width:1.5}
 .sch-ech{fill:none;stroke:var(--encre-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.sch-ech-chev{fill:none;stroke:var(--encre-2);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.sch-ech-chev{fill:none;stroke:var(--encre-2);stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+.sch-tirant{fill:none;stroke:var(--encre-2);stroke-width:1.1;opacity:.8}
+.sch-serpentin{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.sch-charge{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:2}
 .sch-pompe-fl{fill:var(--moyenne);stroke:none}
 .sch-antenne{fill:none;stroke:var(--primaire);stroke-width:1.5;stroke-linecap:round}
@@ -1298,7 +1301,7 @@ function valeursScenario(scenario) {
    l'architecture retenue. Ce sont des schémas de principe, pas des plans : ils
    illustrent les descriptions de [B1] fig. 15, sans respecter d'échelle.
    ================================================================ */
-const SCH = { w: 340, h: 200, x0: 68, bas: 150, collA: 162, collR: 178, solY: 156 };
+const SCH = { w: 340, h: 212, x0: 74, bas: 150, collA: 162, collR: 178, solY: 156 };
 
 function schCadre() {
   return '<rect class="sch-bat" x="76" y="18" width="242" height="138" rx="3"/>'
@@ -1353,25 +1356,57 @@ function schRobinetsHoriz(xs, ys) {
 function schEchangeur(x, y, w, h) {
   const cx = x + w / 2, hp1 = y + 7, hp2 = y + h - 7;
   let o = '<rect class="sch-prod" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="4"/>';
-  for (let i = 0; i < 3; i++) {
-    const yc = y + 10 + i * 7;
-    o += '<path class="sch-ech-chev" d="M' + (x + 4) + ' ' + yc + ' L' + cx + ' ' + (yc - 4) + ' L' + (x + w - 4) + ' ' + yc + '"/>';
+  // Plaque de serrage fixe, côté bâti.
+  o += '<line class="sch-tirant" x1="' + (x + 4.5) + '" y1="' + (y + 3) + '" x2="' + (x + 4.5) + '" y2="' + (y + h - 3) + '"/>';
+  // Corrugation en chevrons. Quatre suffisent : au-delà, à cette taille, le motif se referme
+  // en aplat gris et ne se lit plus.
+  const n = 4, haut = y + 8, pas = (h - 14) / (n - 1);
+  for (let i = 0; i < n; i++) {
+    const yc = haut + i * pas;
+    o += '<path class="sch-ech-chev" d="M' + (x + 7) + ' ' + yc + ' L' + cx + ' ' + (yc - 4) + ' L' + (x + w - 3) + ' ' + yc + '"/>';
   }
-  // Piquages : deux à gauche (circuit primaire), deux à droite (circuit ECS).
-  o += '<path class="sch-ech" d="M' + x + ' ' + hp1 + ' h-4 M' + x + ' ' + hp2 + ' h-4'
-    + ' M' + (x + w) + ' ' + hp1 + ' h4 M' + (x + w) + ' ' + hp2 + ' h4"/>';
+  // Tirants de serrage, côté plaque mobile.
+  o += '<circle class="sch-tirant" cx="' + (x + w - 4) + '" cy="' + (y + 4) + '" r="1.4"/>'
+    + '<circle class="sch-tirant" cx="' + (x + w - 4) + '" cy="' + (y + h - 4) + '" r="1.4"/>';
+  // Quatre piquages : primaire à gauche, ECS à droite, avec leur bride.
+  o += '<path class="sch-ech" d="M' + x + ' ' + hp1 + ' h-5 M' + (x - 5) + ' ' + (hp1 - 2.5) + ' v5'
+    + ' M' + x + ' ' + hp2 + ' h-5 M' + (x - 5) + ' ' + (hp2 - 2.5) + ' v5'
+    + ' M' + (x + w) + ' ' + hp1 + ' h5 M' + (x + w + 5) + ' ' + (hp1 - 2.5) + ' v5'
+    + ' M' + (x + w) + ' ' + hp2 + ' h5 M' + (x + w + 5) + ' ' + (hp2 - 2.5) + ' v5"/>';
   return o;
+}
+
+/* Serpentin d'un ballon à échangeur incorporé : un tracé en créneaux, plus lisible qu'une
+   spirale à cette taille, avec ses deux piquages primaires sortant à gauche. */
+function schSerpentin(x, y, w, h, tours) {
+  const pas = h / tours;
+  let d = "M" + (x - 14) + " " + y + " H" + x;
+  for (let i = 0; i < tours; i++) {
+    d += " h" + w + " v" + (pas / 2) + " h" + (-w) + " v" + (pas / 2);
+  }
+  d += " H" + (x - 14);
+  return '<path class="sch-serpentin" d="' + d + '"/>';
 }
 
 /* Production : le symbole suit le mode retenu dans "Hypothèses générales". Ballon d'autant
    plus haut que le mode accumule, échangeur seul en instantané, ballon seul en accumulation. */
+/* Technologie associée à chaque mode. Elle suit l'efficacité de stockage annoncée par
+   l'outil pour ce mode : un ballon à échangeur incorporé (0,75) ne se dessine pas comme un
+   ballon stratifié chargé par un échangeur externe (0,90). Les deux ne se cumulent pas, ce
+   serait un double échange. */
 const PROD_SCHEMA = {
-  instantane:   { ballon: 0,  ech: true,  libelle: "instantané" },
-  semiInst:     { ballon: 26, ech: true,  libelle: "semi-instantané" },
-  semiAccu:     { ballon: 44, ech: true,  libelle: "semi-accumulation" },
-  accumulation: { ballon: 62, ech: false, libelle: "accumulation" },
-  permanente:   { ballon: 44, ech: true,  libelle: "échangeur + ballon" },
-  arrets:       { ballon: 44, ech: true,  libelle: "échangeur + ballon" }
+  instantane:   { ballon: 0,  ech: true,  serpentin: false, charge: false,
+                  libelle: "instantané", techno: "échangeur à plaques seul" },
+  semiInst:     { ballon: 28, ech: true,  serpentin: false, charge: true,
+                  libelle: "semi-instantané", techno: "échangeur externe, ballon stratifié" },
+  semiAccu:     { ballon: 46, ech: false, serpentin: true,  charge: false,
+                  libelle: "semi-accumulation", techno: "ballon à échangeur incorporé" },
+  accumulation: { ballon: 64, ech: false, serpentin: true,  charge: false,
+                  libelle: "accumulation", techno: "ballon de stockage à serpentin" },
+  permanente:   { ballon: 46, ech: true,  serpentin: false, charge: true,
+                  libelle: "échangeur + ballon", techno: "échangeur externe, charge permanente" },
+  arrets:       { ballon: 46, ech: true,  serpentin: false, charge: true,
+                  libelle: "échangeur + ballon", techno: "échangeur externe, charge intermittente" }
 };
 function modeProduction(sc) {
   if (sc.usage === "logement") {
@@ -1384,33 +1419,44 @@ function modeProduction(sc) {
 
 function schProduction(modeProd, avecPompe, avecRetour) {
   const cfg = PROD_SCHEMA[modeProd] || PROD_SCHEMA.semiAccu;
-  const basB = 182, xb = 34, wb = 30;
+  const basB = 178, xb = 42, wb = 28;
+  const xe = 6, ye = 140, we = 22, he = 34;      // échangeur à plaques
+  const hp1 = ye + 7, hp2 = ye + he - 7;
   let o = "";
-  let ySortie;                       // point d'où part l'aller
+
   if (cfg.ballon > 0) {
     const hautB = basB - cfg.ballon;
-    o += '<rect class="sch-prod" x="' + xb + '" y="' + hautB + '" width="' + wb + '" height="' + cfg.ballon + '" rx="7"/>';
-    o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 8) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 8) + '"/>';
-    ySortie = hautB + 4;
+    o += '<rect class="sch-prod" x="' + xb + '" y="' + hautB + '" width="' + wb + '" height="' + cfg.ballon + '" rx="8"/>';
+    // Trait de stratification : l'eau chaude occupe le haut du ballon.
+    o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 9) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 9) + '"/>';
+    if (cfg.serpentin) {
+      // Serpentin en partie basse, là où il réchauffe l'eau la plus froide.
+      const tours = cfg.ballon > 55 ? 4 : 3, hs = tours * 8;
+      o += schSerpentin(xb + 6, basB - hs - 6, wb - 12, hs, tours);
+    }
+    const ySortie = hautB + 4;
     o += '<path class="sch-aller" d="M' + (xb + wb) + ' ' + ySortie + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
     if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xb + wb) + ' V' + (basB - 6) + '"/>';
   }
+
   if (cfg.ech) {
-    const xe = 6, ye = 146, we = 22, he = 32;
-    const hp1 = ye + 7, hp2 = ye + he - 7;
     o += schEchangeur(xe, ye, we, he);
-    if (cfg.ballon > 0) {
-      // L'échangeur charge le ballon : sortie chaude vers le ballon.
-      o += '<path class="sch-aller" d="M' + (xe + we + 4) + ' ' + hp1 + ' H' + xb + '"/>';
-    } else {
-      // Instantané : l'échangeur alimente directement la distribution.
-      o += '<path class="sch-aller" d="M' + (xe + we + 4) + ' ' + hp1 + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
-      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 4) + ' V' + hp2 + '"/>';
+    if (cfg.ballon > 0 && cfg.charge) {
+      // Boucle de charge : le ballon se vide par le bas vers l'échangeur et se remplit par
+      // le haut. C'est ce circuit, et non un serpentin, qui chauffe un ballon stratifié.
+      const hautB = basB - cfg.ballon;
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + hp1 + ' H' + (xb - 3) + ' V' + (hautB + 4) + ' H' + xb + '"/>';
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + hp2 + ' H' + (xb - 6) + ' V' + (basB - 5) + ' H' + xb + '"/>';
+    } else if (cfg.ballon === 0) {
+      o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + hp1 + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
+      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 5) + ' V' + hp2 + '"/>';
     }
   }
+
   if (avecPompe) o += schCirculateur(92, SCH.collR, 6.5);
-  // Ancré à gauche : centré, un libellé long comme "semi-accumulation" débordait du cadre.
-  return o + schEtiquette(4, 194, cfg.libelle, "start");
+  // Deux lignes : le mode, puis la technologie qu'il suppose.
+  return o + schEtiquette(4, 194, cfg.libelle, "start")
+    + schEtiquette(4, 204, cfg.techno, "start");
 }
 
 function schEtiquette(x, y, t, ancre) {
@@ -1428,7 +1474,7 @@ const SCHEMAS_ARCHI = {
     o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 308';
     for (const x of cols) o += ' M' + x + ' 32 H ' + (x + 14) + ' V ' + SCH.collR;
     o += '"/>';
-    return o + schRobinetsCol(cols, [44, 90, 136], -1) + schEtiquette(200, 194, "1 boucle par colonne");
+    return o + schRobinetsCol(cols, [44, 90, 136], -1) + schEtiquette(200, 204, "1 boucle par colonne");
   },
   horizontale: () => {
     const niv = [42, 88, 134];
@@ -1438,7 +1484,7 @@ const SCHEMAS_ARCHI = {
     let r = '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 118 V 52';
     for (const y of niv) r += ' M302 ' + y + ' V ' + (y + 10) + ' H 118';
     r += '"/>';
-    return o + r + schRobinetsHoriz([160, 215, 270], niv) + schEtiquette(200, 194, "1 boucle par niveau, en faux-plafond");
+    return o + r + schRobinetsHoriz([160, 215, 270], niv) + schEtiquette(200, 204, "1 boucle par niveau, en faux-plafond");
   },
   parapluieAller: () => {
     const cols = [170, 240, 305];
@@ -1450,7 +1496,7 @@ const SCHEMAS_ARCHI = {
     r += '"/>';
     return o + r + schRobinetsCol(cols, [44, 90, 136], -1)
       + schEtiquette(104, 23, "collecteur aller commun", "start")
-      + schEtiquette(200, 194, "les colonnes descendent : retours très courts");
+      + schEtiquette(200, 204, "les colonnes descendent : retours très courts");
   },
   parapluieRetour: () => {
     const cols = [170, 240, 305];
@@ -1460,7 +1506,7 @@ const SCHEMAS_ARCHI = {
     let r = '<path class="sch-retour" d="M170 28 H 305 M104 28 H 170 M104 28 V ' + SCH.collR + ' H ' + SCH.x0 + '"/>';
     return o + r + schRobinetsCol(cols, [44, 90, 136], -1)
       + schEtiquette(104, 23, "collecteur retour commun", "start")
-      + schEtiquette(200, 194, "un seul retour vertical pour toutes les colonnes");
+      + schEtiquette(200, 204, "un seul retour vertical pour toutes les colonnes");
   },
   parapluieColonne: () => {
     const cols = [235, 305];
@@ -1472,7 +1518,7 @@ const SCHEMAS_ARCHI = {
     r += ' M140 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
     return o + r + schRobinetsCol([140].concat(cols), [44, 90, 136], -1)
       + schEtiquette(140, 23, "1re colonne commune", "start")
-      + schEtiquette(200, 194, "la 1re colonne dessert aussi : coupure générale si on l'isole");
+      + schEtiquette(200, 204, "la 1re colonne dessert aussi : coupure générale si on l'isole");
   },
   uInverse: () => {
     let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 262'
@@ -1483,7 +1529,7 @@ const SCHEMAS_ARCHI = {
       + ' M310 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
     return o + r + schRobinetsCol([130, 262], [44, 90, 136], -1) + schRobinetsCol([192, 310], [44, 90, 136], 1)
       + schEtiquette(161, 25, "U inversé")
-      + schEtiquette(200, 194, "2 colonnes par boucle : moitié moins de boucles");
+      + schEtiquette(200, 204, "2 colonnes par boucle : moitié moins de boucles");
   },
   horizCourt: () => {
     const niv = [42, 88, 134];
@@ -1495,7 +1541,7 @@ const SCHEMAS_ARCHI = {
     for (const y of niv) r += ' M302 ' + y + ' L 118 ' + (y + 14);
     r += '"/>';
     return o + r + schRobinetsHoriz([160, 215, 270], niv)
-      + schEtiquette(200, 194, "retours en direct, sans retracer l'aller");
+      + schEtiquette(200, 204, "retours en direct, sans retracer l'aller");
   }
 };
 
@@ -1512,12 +1558,12 @@ const SCHEMAS_MAINTIEN = {
     return o + c + schRobinetsHoriz([160, 215, 270], niv)
       + '<rect class="sch-prod" x="6" y="112" width="30" height="16" rx="3"/>'
       + schEtiquette(21, 124, "230 V")
-      + schEtiquette(200, 194, "aucune canalisation de retour, aucun circulateur");
+      + schEtiquette(200, 204, "aucune canalisation de retour, aucun circulateur");
   },
   sans: () => {
     let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 130 V 136 H 158"/>';
     return o + schRobinet(158, 136, 9, 0)
-      + schEtiquette(200, 194, "admis sous 3 litres et 8 m d'antenne");
+      + schEtiquette(200, 204, "admis sous 3 litres et 8 m d'antenne");
   }
 };
 
@@ -2251,6 +2297,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v13", date: "2026-08-29", titre: "Schéma de production fidèle",
+    texte: "Le serpentin apparaît dans le ballon quand la technologie l'implique, et l'échangeur à plaques gagne sa plaque de serrage, ses tirants et ses quatre piquages à bride. Serpentin et échangeur externe ne sont jamais dessinés ensemble, ce serait un double échange : chaque mode montre la technologie que suppose son efficacité de stockage, nommée sous le dessin." },
   { v: "v12", date: "2026-08-29", titre: "Sens des robinets",
     texte: "Les robinets piqués vers la gauche sont retournés : leur entrée d'eau est côté canalisation et leur bec pointe vers l'extérieur. Ils semblaient auparavant alimenter le réseau au lieu d'en être alimentés." },
   { v: "v11", date: "2026-08-29", titre: "Échangeur à plaques sur le schéma",

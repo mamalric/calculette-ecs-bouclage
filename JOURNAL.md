@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v13 : schéma de production fidèle)
+- Demande de l'utilisateur : rendre le schéma de production fiable, afficher le serpentin dans le ballon et détailler l'échangeur.
+- Point technique qui a guidé le travail : un ballon à échangeur incorporé et un échangeur à plaques externe sont deux technologies alternatives, pas cumulables. Les dessiner ensemble reviendrait à représenter un double échange. Le dessin doit donc choisir, et il choisit ce que l'outil annonce déjà par ailleurs.
+- Vérification faite dans le code avant de dessiner : les efficacités par défaut disent "ballon à échangeur incorporé" en semi-accumulation (0,75) et "ballon stratifié" en semi-instantané et en accumulation (0,90). Le dessin suit désormais exactement cette hypothèse, et la technologie est nommée en toutes lettres sous le schéma.
+- Serpentin : tracé en créneaux, plus lisible qu'une spirale à cette taille, placé en partie basse du ballon là où il réchauffe l'eau la plus froide, avec ses deux piquages primaires sortant du ballon.
+- Boucle de charge : pour les modes à échangeur externe, le circuit qui prend l'eau en bas du ballon, la fait passer dans l'échangeur et la renvoie en haut est maintenant dessiné. C'est lui, et non un serpentin, qui chauffe un ballon stratifié.
+- Échangeur à plaques détaillé : plaque de serrage fixe, quatre chevrons de corrugation, deux tirants de serrage et quatre piquages à bride, deux par circuit. Quatre chevrons et non huit comme sur l'image de référence : au-delà, le motif se referme en aplat gris à cette taille.
+- Implantation revue pour loger l'ensemble sans chevauchement : départ des canalisations décalé de 68 à 74, ballon reculé, viewBox portée de 200 à 212 pour accueillir la seconde ligne de légende.
+- Vérification : tous les croisements usage x production x maintien x architecture, avec contrôle explicite qu'aucun schéma ne montre à la fois un serpentin et un échangeur externe, que la présence de chacun correspond bien à la technologie du mode, et que rien ne sort du cadre.
+
 ## 2026-08-29 (v12 : sens des robinets)
 - Défaut signalé par l'utilisateur : sur les colonnes, les robinets étaient à l'envers. L'icône a son entrée d'eau à gauche et son bec à droite ; posée telle quelle au bout d'une antenne partant vers la gauche, son bec pointait vers la colonne et le robinet semblait alimenter le réseau au lieu d'en être alimenté.
 - Correction : l'icône est retournée horizontalement quand le piquage part vers la gauche, par une transformation `scale(-1 1)` autour du point de raccordement. L'entrée reste ainsi toujours côté canalisation et le bec toujours vers l'extérieur.
