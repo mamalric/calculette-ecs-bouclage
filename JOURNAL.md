@@ -10,6 +10,7 @@
 - Honnêteté du dessin : une note sous chaque schéma rappelle qu'il s'agit d'un principe sans échelle, illustrant [B1] fig. 15 pour les architectures et le principe du mode retenu pour les deux autres, et non l'installation de l'utilisateur.
 - Deux retouches après contrôle visuel : la boîte "230 V" du traçage chevauchait le symbole de production, et la note renvoyait à la figure 15 même pour les modes sans bouclage, où cette référence n'a pas de sens.
 - Vérification : les 9 tracés rendus pour les 7 usages, aucun schéma manquant, aucune coordonnée invalide, en clair comme en sombre.
+- Fusionné dans `main` et étiqueté `v7`.
 
 ## 2026-08-29 (v6 : matériau de l'aller et du retour)
 - Incohérence signalée par l'utilisateur : il avait choisi PVC-C multicouche comme matériau du retour, mais la liste des diamètres de l'aller proposait toujours du cuivre. En réalité l'aller n'avait aucun matériau, il était implicitement cuivre dans les libellés, et le sélecteur ne servait qu'à fixer la vitesse limite du retour.
@@ -18,6 +19,7 @@
 - Les valeurs publiées sont reprises telles quelles et non recalculées : le guide arrondit ses débits, 85 L/h annoncés contre 81 calculés pour un diamètre intérieur de 12 mm.
 - Défaut trouvé en vérifiant l'affichage : la branche `select` de la construction des champs lisait `ch.def` directement au lieu de passer par `defautChamp`, si bien qu'un défaut calculé par fonction laissait la liste vide. Le calcul, lui, était juste, seul l'affichage était en cause. Corrigé, et contrôlé par un test qui vérifie qu'aucune liste ne reste vide pour aucun matériau.
 - Vérification : 84 combinaisons (7 usages x 3 modes de maintien x 4 matériaux) sans erreur ni valeur invalide, tous les boutons d'aide ouverts, et validité du diamètre après changement de matériau.
+- Fusionné dans `main` et étiqueté `v6`, publié en même temps que la v7.
 
 ## 2026-08-29 (v5 : journal des versions)
 - Ajout d'une section "Journal des versions" au panneau "À propos", à la demande de l'utilisateur : une puce par version publiée, avec son étiquette, sa date, son titre et ce qui a changé. La version en cours est mise en évidence.
