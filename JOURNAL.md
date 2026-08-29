@@ -2,6 +2,14 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v6 : matériau de l'aller et du retour)
+- Incohérence signalée par l'utilisateur : il avait choisi PVC-C multicouche comme matériau du retour, mais la liste des diamètres de l'aller proposait toujours du cuivre. En réalité l'aller n'avait aucun matériau, il était implicitement cuivre dans les libellés, et le sélecteur ne servait qu'à fixer la vitesse limite du retour.
+- Sa proposition, retenue : deux sélecteurs, un par tronçon. Sur sa question de savoir si le matériau est généralement le même de part et d'autre, la réponse est oui, l'aller et le retour d'une même boucle étant posés ensemble. Le matériau du retour reprend donc celui de l'aller par défaut, et ne s'en écarte que si on le change, ce qui couvre la rénovation partielle sans imposer deux choix dans le cas courant.
+- Tables de diamètres retournées chercher dans le guide : [B1] fig. 45 publie le cuivre (12 diamètres, dont trois qui manquaient à ma table : 13/15, 38/40, 51/54) et le PVC-C en PN25 et PN16, que je n'avais pas vus la première fois. Pour le multicouche, l'annexe 1 donne les diamètres extérieurs mais aucune table de débits : les débits sont calculés sur des diamètres intérieurs commerciaux courants, signalés en confiance faible dans l'interface et dans docs/methodes.md.
+- Les valeurs publiées sont reprises telles quelles et non recalculées : le guide arrondit ses débits, 85 L/h annoncés contre 81 calculés pour un diamètre intérieur de 12 mm.
+- Défaut trouvé en vérifiant l'affichage : la branche `select` de la construction des champs lisait `ch.def` directement au lieu de passer par `defautChamp`, si bien qu'un défaut calculé par fonction laissait la liste vide. Le calcul, lui, était juste, seul l'affichage était en cause. Corrigé, et contrôlé par un test qui vérifie qu'aucune liste ne reste vide pour aucun matériau.
+- Vérification : 84 combinaisons (7 usages x 3 modes de maintien x 4 matériaux) sans erreur ni valeur invalide, tous les boutons d'aide ouverts, et validité du diamètre après changement de matériau.
+
 ## 2026-08-29 (v5 : journal des versions)
 - Ajout d'une section "Journal des versions" au panneau "À propos", à la demande de l'utilisateur : une puce par version publiée, avec son étiquette, sa date, son titre et ce qui a changé. La version en cours est mise en évidence.
 - Les dates ne sont pas écrites de mémoire : elles ont été relevées sur les étiquettes git du dépôt. La version affichée en tête du panneau découle maintenant de la première entrée du journal, une seule source, donc plus de divergence possible entre l'en-tête et la liste.

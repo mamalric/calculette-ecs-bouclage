@@ -513,18 +513,72 @@ const CLASSES_ISOL = {
   4: { a: 1.5, b: 0.16 }, 5: { a: 1.1, b: 0.14 }, 6: { a: 0.8, b: 0.12 }
 };
 
-// Tubes cuivre : débits (L/h) à 0,2 / 0,3 / 0,5 m/s ([B1] fig. 45 p. 55)
-const CUIVRE = [
-  { di: 12, de: 14, q02: 85,   q03: 120,  q05: 200 },
-  { di: 14, de: 16, q02: 115,  q03: 165,  q05: 275 },
-  { di: 16, de: 18, q02: 145,  q03: 215,  q05: 360 },
-  { di: 20, de: 22, q02: 230,  q03: 335,  q05: 565 },
-  { di: 26, de: 28, q02: 385,  q03: 570,  q05: 955 },
-  { di: 33, de: 35, q02: 620,  q03: 920,  q05: 1535 },
-  { di: 40, de: 42, q02: 905,  q03: 1355, q05: 2260 },
-  { di: 52, de: 54, q02: 1530, q03: 2290, q05: 3820 },
-  { di: 60, de: 64, q02: 2040, q03: 3050, q05: 5085 }
-];
+/* Débits par diamètre, à la vitesse minimale de 0,2 m/s et à la vitesse maximale retenue
+   pour chaque matériau. Cuivre et PVC-C : valeurs publiées par [B1] fig. 45 p. 55, reprises
+   telles quelles (le guide arrondit, ne pas les recalculer). Multicouche : le guide donne
+   les diamètres extérieurs en annexe 1 mais aucune table de débits, les valeurs sont donc
+   calculées sur des diamètres intérieurs commerciaux courants, qui varient d'un fabricant à
+   l'autre. Le diamètre intérieur minimal d'un retour est de 12 mm ([B1] fig. 45). */
+function debitCalcule(diMm, v) { return Math.round(Math.PI * Math.pow(diMm / 1000, 2) / 4 * v * 3.6e6); }
+function tubesCalcules(paires, vmax) {
+  return paires.map(([di, de]) => ({ di, de, q02: debitCalcule(di, 0.2), qmax: debitCalcule(di, vmax) }));
+}
+
+const MATERIAUX = {
+  cuivre: {
+    label: "Cuivre", vmax: 0.3, publie: true,
+    note: "Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent pour limiter la corrosion-érosion aux tés et raccords [B1].",
+    tubes: [
+      { di: 12, de: 14, q02: 85,   qmax: 120 },
+      { di: 13, de: 15, q02: 100,  qmax: 140 },
+      { di: 14, de: 16, q02: 115,  qmax: 165 },
+      { di: 16, de: 18, q02: 145,  qmax: 215 },
+      { di: 20, de: 22, q02: 230,  qmax: 335 },
+      { di: 26, de: 28, q02: 385,  qmax: 570 },
+      { di: 33, de: 35, q02: 620,  qmax: 920 },
+      { di: 38, de: 40, q02: 820,  qmax: 1220 },
+      { di: 40, de: 42, q02: 905,  qmax: 1355 },
+      { di: 51, de: 54, q02: 1475, qmax: 2205 },
+      { di: 52, de: 54, q02: 1530, qmax: 2290 },
+      { di: 60, de: 64, q02: 2040, qmax: 3050 }
+    ]
+  },
+  pvcc25: {
+    label: "PVC-C PN25", vmax: 0.5, publie: true,
+    note: "Vitesse limitée à 0,5 m/s [B1].",
+    tubes: [
+      { di: 12.4, de: 16, q02: 90,   qmax: 215 },
+      { di: 15.4, de: 20, q02: 135,  qmax: 335 },
+      { di: 19.4, de: 25, q02: 215,  qmax: 530 },
+      { di: 24.8, de: 32, q02: 350,  qmax: 865 },
+      { di: 31,   de: 40, q02: 545,  qmax: 1355 },
+      { di: 38.8, de: 50, q02: 855,  qmax: 2125 },
+      { di: 48.8, de: 63, q02: 1350, qmax: 3365 }
+    ]
+  },
+  pvcc16: {
+    label: "PVC-C PN16", vmax: 0.5, publie: true,
+    note: "Vitesse limitée à 0,5 m/s [B1].",
+    tubes: [
+      { di: 21.2, de: 25, q02: 255,  qmax: 635 },
+      { di: 27.2, de: 32, q02: 420,  qmax: 1045 },
+      { di: 34,   de: 40, q02: 655,  qmax: 1630 },
+      { di: 42.6, de: 50, q02: 1030, qmax: 2565 },
+      { di: 53.6, de: 63, q02: 1625, qmax: 4060 },
+      { di: 63.8, de: 75, q02: 2305, qmax: 5750 }
+    ]
+  },
+  multi: {
+    label: "Multicouche", vmax: 0.5, publie: false,
+    note: "Vitesse limitée à 0,5 m/s [B1]. Diamètres intérieurs commerciaux courants, non publiés par le guide : vérifier sur la documentation du fabricant retenu.",
+    tubes: tubesCalcules([[12, 16], [14, 18], [16, 20], [20, 26], [26, 32], [33, 40], [42, 50], [54, 63]], 0.5)
+  }
+};
+function mat(id) { return MATERIAUX[id] || MATERIAUX.cuivre; }
+function tubeDe(idMat, de) {
+  const t = mat(idMat).tubes.filter(x => x.de === Number(de));
+  return t.length ? t[t.length - 1] : mat(idMat).tubes[0];
+}
 
 const VOLUMES_STD = [200, 300, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 8000, 10000];
 
@@ -746,17 +800,6 @@ const HYPOTHESES = [
 ];
 
 // Champs bouclage
-/* Matériaux du retour. Les diamètres proposés restent ceux de la table cuivre de [B1]
-   fig. 45 : c'est la seule table de débits publiée dans le guide. Pour le PVC-C et le
-   multicouche, les dimensions commerciales diffèrent, la valeur est donc un équivalent
-   indicatif, signalé comme tel dans les résultats. */
-const MATERIAUX = {
-  cuivre: { label: "Cuivre", seuil: "q03",
-    note: "Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent (corrosion-érosion) [B1]." },
-  autre: { label: "PVC-C / multicouche", seuil: "q05",
-    note: "Vitesse limitée à 0,5 m/s [B1]. Diamètre donné en équivalent cuivre : reprendre la dimension commerciale du matériau retenu." }
-};
-
 /* Mode de maintien en température. Le couple aller + retour n'existe que pour un réseau
    bouclé : le traçage électrique remplace le retour par un ruban chauffant posé sur l'aller,
    et une distribution courte peut se passer de tout maintien. */
@@ -810,10 +853,15 @@ const CHAMPS_BOUCLAGE = [
   { id: "bLr", label: "Longueur du retour de bouclage", type: "number", def: 0, min: 0, step: 5, unite: "m",
     si: sc => modeMaintien(sc) === "boucle",
     aide: "0 = prendre la même longueur que l'aller. Certaines architectures ont un retour nettement plus court que l'aller (parapluie, U inversé, horizontale à retours courts) : saisir alors la longueur réelle." },
-  { id: "bDeAller", label: "Diamètre extérieur moyen de l'aller", type: "select", def: "28",
-    options: CUIVRE.map(t => ({ v: String(t.de), t: "De " + t.de + " (cuivre " + t.di + "/" + t.de + ")" })),
+  { id: "bMatAller", label: "Matériau du réseau aller", type: "select", def: "cuivre",
+    options: Object.keys(MATERIAUX).map(v => ({ v, t: MATERIAUX[v].label })),
     si: sc => modeMaintien(sc) !== "sans",
-    aide: "Diamètre moyen pondéré du réseau aller (pré-dimensionnement)." },
+    aide: "Détermine les diamètres commerciaux proposés ci-contre. Acier galvanisé à proscrire en bouclage ([B1] p. 67), et jamais en aval d'éléments en cuivre (NF DTU 60.1)." },
+  { id: "bDeAller", label: "Diamètre extérieur moyen de l'aller", type: "select",
+    def: sc => String(diametreDefaut(matAller(sc))),
+    options: sc => mat(matAller(sc)).tubes.map(t => ({ v: String(t.de), t: "De " + t.de + " (" + t.di + "/" + t.de + ")" })),
+    si: sc => modeMaintien(sc) !== "sans",
+    aide: sc => "Diamètre moyen pondéré du réseau aller, en " + mat(matAller(sc)).label + " (pré-dimensionnement). Il fixe les pertes de l'aller via le coefficient de la classe d'isolation." },
   { id: "bClasse", label: "Classe d'isolation (NF EN 12828)", type: "select", def: "4",
     options: [1, 2, 3, 4, 5, 6].map(cl => ({ v: String(cl), t: "Classe " + cl + (cl === 4 ? " (recommandée)" : "") })),
     si: sc => modeMaintien(sc) !== "sans",
@@ -824,10 +872,11 @@ const CHAMPS_BOUCLAGE = [
   { id: "bChute", label: "Chute de température admissible", type: "number", def: 5, min: 1, max: 7, step: 0.5, unite: "K",
     si: sc => modeMaintien(sc) === "boucle",
     aide: "5 K maxi ([B1] p. 51-52 ; jusqu'à 7 K si la production ne descend jamais sous 57 °C). Garantit 50 °C au point le plus défavorisé (arrêté du 30/11/2005)." },
-  { id: "bMat", label: "Matériau du retour", type: "select", def: "cuivre",
-    options: [{ v: "cuivre", t: "Cuivre - 0,3 m/s maxi conseillé" }, { v: "autre", t: "PVC-C / multicouche - 0,5 m/s maxi" }],
+  { id: "bMatRetour", label: "Matériau du réseau retour", type: "select",
+    def: sc => matAller(sc),
+    options: Object.keys(MATERIAUX).map(v => ({ v, t: MATERIAUX[v].label })),
     si: sc => modeMaintien(sc) === "boucle",
-    aide: "Cuivre : moins de 0,3 m/s conseillé en permanent (corrosion-érosion) [B1]. Acier galvanisé à proscrire en bouclage. Les diamètres proposés viennent de la table cuivre de [B1] fig. 45, seule table de débits publiée : en PVC-C ou multicouche, la valeur est un équivalent indicatif à retraduire en dimension commerciale." }
+    aide: sc => "Reprend par défaut le matériau de l'aller, l'aller et le retour d'une même boucle étant normalement posés dans le même matériau. À changer en cas de rénovation partielle. " + mat(matRetour(sc)).note + (mat(matRetour(sc)).publie ? " Débits par diamètre publiés par [B1] fig. 45." : "") }
 ];
 
 const CHAMPS_VERIF = [
@@ -856,6 +905,21 @@ function modeMaintien(sc) {
   const v = sc.saisies ? sc.saisies["bMaintien"] : null;
   return (v && MAINTIEN[v]) ? v : "boucle";
 }
+function matAller(sc) {
+  const v = sc.saisies ? sc.saisies["bMatAller"] : null;
+  return (v && MATERIAUX[v]) ? v : "cuivre";
+}
+function matRetour(sc) {
+  const v = sc.saisies ? sc.saisies["bMatRetour"] : null;
+  return (v && MATERIAUX[v]) ? v : matAller(sc);
+}
+// Diamètre proposé par défaut : le premier au-dessus de 25 mm extérieurs, ordre de grandeur
+// d'un collecteur d'immeuble, sinon le plus gros de la gamme.
+function diametreDefaut(idMat) {
+  const t = mat(idMat).tubes;
+  const choisi = t.filter(x => x.de >= 25)[0];
+  return (choisi || t[t.length - 1]).de;
+}
 function modeArchi(sc) {
   const v = sc.saisies ? sc.saisies["bArchi"] : null;
   return (v && ARCHI_BOUCLAGE[v]) ? v : "colonnes";
@@ -871,7 +935,9 @@ function calcBouclage(s) {
   const La = s.bLa;
   if (!(La > 0)) return null;
   const classe = parseInt(s.bClasse, 10);
-  const deAller = parseInt(s.bDeAller, 10);
+  const idMatAller = MATERIAUX[s.bMatAller] ? s.bMatAller : "cuivre";
+  const tubeAller = tubeDe(idMatAller, s.bDeAller);
+  const deAller = tubeAller.de;
   const chute = s.bChute, tamb = s.bTamb, tdep = s.tsto;
   const archi = ARCHI_BOUCLAGE[s.bArchi] ? s.bArchi : "colonnes";
   const kArchi = ARCHI_BOUCLAGE[archi].k;
@@ -882,7 +948,7 @@ function calcBouclage(s) {
     const dT = tdep - tamb;   // pas de chute de boucle : le ruban maintient la température
     if (dT <= 0) return { maintien, erreur: "Température ambiante supérieure à la température de distribution : pertes nulles ou négatives." };
     const pAller = kA * La * dT * kArchi;
-    return { maintien, archi, kArchi, classe, deAller, La, dT,
+    return { maintien, archi, kArchi, classe, deAller, La, dT, matAller: idMatAller,
              pAller, pRetour: 0, pertes: pAller, wParM: pAller / La };
   }
 
@@ -892,33 +958,35 @@ function calcBouclage(s) {
   // Température moyenne de boucle approchée : départ - chute/2 (calcul tronçon par tronçon dans [B1])
   const dT = (tdep - chute / 2) - tamb;
   if (dT <= 0) return { maintien, erreur: "Température ambiante supérieure à la température de boucle : pertes nulles ou négatives." };
-  const seuil = MATERIAUX[s.bMat] ? MATERIAUX[s.bMat].seuil : "q03";
+  const idMatRetour = MATERIAUX[s.bMatRetour] ? s.bMatRetour : idMatAller;
+  const TR = mat(idMatRetour).tubes;   // gamme du matériau du retour
   const plusPetit = q => {
-    for (let i = 0; i < CUIVRE.length; i++) if (q <= CUIVRE[i][seuil]) return { i, depasse: false };
-    return { i: CUIVRE.length - 1, depasse: true };
+    for (let i = 0; i < TR.length; i++) if (q <= TR[i].qmax) return { i, depasse: false };
+    return { i: TR.length - 1, depasse: true };
   };
 
   let iRet = 0, res = null;
   for (let iter = 0; iter < 8; iter++) {
-    const kR = kIsolant(classe, CUIVRE[iRet].de);
+    const kR = kIsolant(classe, TR[iRet].de);
     const pAller = kA * La * dT * kArchi;
     const pRetour = kR * Lr * dT * kArchi;
     const pertes = pAller + pRetour;
     const qPertes = pertes / (1.16 * chute);        // [B1] p. 57-60
     // Le débit se partage entre les boucles ; chaque retour garde son plancher de 0,2 m/s.
-    const choix = plusPetit(Math.max(qPertes / nb, CUIVRE[iRet].q02));
-    const tube = CUIVRE[choix.i];
+    const choix = plusPetit(Math.max(qPertes / nb, TR[iRet].q02));
+    const tube = TR[choix.i];
     const qParBoucle = Math.max(qPertes / nb, tube.q02);
     const qTotal = qParBoucle * nb;
     const coll = plusPetit(qTotal);
     res = {
       maintien, archi, kArchi, classe, deAller, chute, La, Lr, dT, nb,
+      matAller: idMatAller, matRetour: idMatRetour,
       pAller, pRetour, pertes, qPertes,
       tube, qParBoucle, qRetenu: qTotal,
       qMin: tube.q02 * nb,                          // plancher total imposé par les 0,2 m/s
       vitesse: 0.2 * qParBoucle / tube.q02,
-      collecteur: CUIVRE[coll.i],
-      vitesseColl: 0.2 * qTotal / CUIVRE[coll.i].q02,
+      collecteur: TR[coll.i],
+      vitesseColl: 0.2 * qTotal / TR[coll.i].q02,
       depasse: choix.depasse, depasseColl: coll.depasse,
       forceParBoucles: qTotal > qPertes * 1.001     // le plancher de vitesse impose plus que les pertes
     };
@@ -1358,13 +1426,17 @@ function creerChamp(scenario, ch, cle) {
   } else if (ch.type === "select") {
     wrap.appendChild(enteteChamp(ch, scenario));
     const sel = document.createElement("select");
-    for (const o of ch.options) {
+    const opts = (typeof ch.options === "function") ? ch.options(scenario) : ch.options;
+    for (const o of opts) {
       const opt = document.createElement("option");
       opt.value = o.v; opt.textContent = o.t;
       sel.appendChild(opt);
     }
     const sv = scenario.saisies[cle];
-    sel.value = (sv === undefined) ? ch.def : sv;
+    // defautChamp et non ch.def : un défaut peut être calculé par une fonction (diamètre
+    // dépendant du matériau, matériau du retour recopiant celui de l'aller), auquel cas
+    // affecter ch.def laisserait la liste vide.
+    sel.value = (sv === undefined) ? String(defautChamp(scenario, ch)) : sv;
     sel.addEventListener("change", () => {
       scenario.saisies[cle] = sel.value;
       const lien = RATIOS_LIES[scenario.usage];
@@ -1372,6 +1444,9 @@ function creerChamp(scenario, ch, cle) {
       // Changer de mode reprend l'efficacité de stockage de la technologie associée
       // et la fenêtre de recharge correspondante.
       if (ch.id === "modeT") { delete scenario.saisies["coefR"]; delete scenario.saisies["tr"]; }
+      // Les gammes de diamètres diffèrent d'un matériau à l'autre : un diamètre mémorisé
+      // pour l'ancien matériau n'existe pas forcément dans le nouveau.
+      if (ch.id === "bMatAller") delete scenario.saisies["bDeAller"];
       sauverEtat(); rendreFormulaire(); rendreResultats();
     });
     wrap.appendChild(sel);
@@ -1573,25 +1648,25 @@ function rendreResultats() {
     h += carte(fmt(b.wParM, 1) + " <small>W/m</small>", "Puissance linéique du cordon");
     h += carte("Aucun", "Retour de bouclage (supprimé par le traçage)");
     h += '</div>';
-    h += '<div class="notice">Un seul tube maintenu en température, sur ' + fmt(b.La) + ' m : pas de canalisation de retour, donc pas de débit ni de circulateur, et des pertes environ deux fois plus faibles qu\'un réseau bouclé de même tracé. Calcul en classe ' + b.classe + ' (k maxi NF EN 12828), De ' + b.deAller + ', distribution à ' + fmt(s.tsto) + ' °C dans une ambiance à ' + fmt(s.bTamb) + ' °C.</div>';
+    h += '<div class="notice">Un seul tube maintenu en température, sur ' + fmt(b.La) + ' m : pas de canalisation de retour, donc pas de débit ni de circulateur, et des pertes environ deux fois plus faibles qu\'un réseau bouclé de même tracé. Calcul en classe ' + b.classe + ' (k maxi NF EN 12828), ' + ech(mat(b.matAller).label) + ' De ' + b.deAller + ', distribution à ' + fmt(s.tsto) + ' °C dans une ambiance à ' + fmt(s.bTamb) + ' °C.</div>';
     if (b.wParM > 12 || b.wParM < 4) {
       h += '<div class="regwarn">' + ico("attention", 17) + 'Puissance linéique de ' + fmt(b.wParM, 1) + ' W/m, éloignée de l\'ordre de grandeur usuel d\'environ 7 W/m avec un calorifuge correct (Energie+) : vérifier le diamètre, la classe d\'isolation et la température ambiante saisis.</div>';
     }
     h += '<div class="live">' + ico("info", 16) + '<span>Le traçage supprime la circulation en période de non-puisage, et une panne de cordon passe facilement inaperçue : <b>risque légionelles accru</b>. À réserver aux distributions à puisages réguliers, avec suivi du bon fonctionnement. Cette puissance est électrique et indépendante de la production ECS.</span></div>';
   } else {
     const b = r.bcl;
-    const mat = MATERIAUX[s.bMat] || MATERIAUX.cuivre;
+    const mr = mat(b.matRetour);
     h += '<div class="synth">';
     h += carte(m3(b.qRetenu) + " <small>m³/h</small>", "Débit de bouclage total" + (b.nb > 1 ? " (" + m3(b.qParBoucle) + " m³/h par boucle)" : ""));
     h += carte(fmt(b.pertes) + " <small>W</small>", "Pertes du réseau bouclé (" + fmt(b.pAller) + " W aller + " + fmt(b.pRetour) + " W retour)");
-    h += carte(ech(mat.label) + " " + b.tube.di + "/" + b.tube.de, "Retour d'une boucle (v = " + fmt(b.vitesse, 2) + " m/s)");
-    if (b.nb > 1) h += carte(ech(mat.label) + " " + b.collecteur.di + "/" + b.collecteur.de, "Collecteur de retour (v = " + fmt(b.vitesseColl, 2) + " m/s)");
+    h += carte(ech(mr.label) + " " + b.tube.di + "/" + b.tube.de, "Retour d'une boucle (v = " + fmt(b.vitesse, 2) + " m/s)");
+    if (b.nb > 1) h += carte(ech(mr.label) + " " + b.collecteur.di + "/" + b.collecteur.de, "Collecteur de retour (v = " + fmt(b.vitesseColl, 2) + " m/s)");
     h += '</div>';
     h += '<div class="notice">Débit issu des pertes : ' + m3(b.qPertes) + ' m³/h (Q = P / (1,16 x ' + b.chute + ' K), [B1])' +
       (b.nb > 1 ? ', réparti sur ' + fmt(b.nb) + ' boucles' : '') +
-      ' ; plancher à 0,2 m/s dans les retours : ' + m3(b.qMin) + ' m³/h (NF DTU 60.11). Pertes en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour sur ' + fmt(b.Lr) + ' m' +
+      ' ; plancher à 0,2 m/s dans les retours : ' + m3(b.qMin) + ' m³/h (NF DTU 60.11). Pertes en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller ' + ech(mat(b.matAller).label) + ' De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour ' + ech(mr.label) + ' sur ' + fmt(b.Lr) + ' m' +
       (b.kArchi !== 1 ? '. Architecture ' + ech(ARCHI_BOUCLAGE[b.archi].label) + ' : pertes corrigées de ' + fmt((b.kArchi - 1) * 100, 0) + ' % ([B1] fig. 15)' : '') + '.</div>';
-    h += '<div class="live">' + ico("info", 16) + '<span>Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102). ' + ech(mat.note) + '</span></div>';
+    h += '<div class="live">' + ico("info", 16) + '<span>Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102). ' + ech(mr.note) + '</span></div>';
     if (b.depasse) {
       h += '<div class="regwarn">' + ico("attention", 17) + 'Le débit d\'une boucle dépasse le plus gros diamètre de la table, même à la vitesse maximale : <b>augmenter le nombre de boucles</b> ou réduire la longueur du réseau.</div>';
     } else if (b.tube.de >= 42) {
@@ -1743,12 +1818,13 @@ function syntheseTexte() {
     L.push("- Puissance électrique, indépendante de la production ECS. Risque légionelles accru faute de circulation");
   } else {
     const b = r.bcl;
-    const mat = MATERIAUX[s.bMat] || MATERIAUX.cuivre;
+    const mr = mat(b.matRetour);
     L.push("- Réseau bouclé, architecture : " + ARCHI_BOUCLAGE[b.archi].label + (b.kArchi !== 1 ? " (pertes corrigées de " + fmt((b.kArchi - 1) * 100, 0) + " %)" : ""));
     L.push("- Pertes du réseau bouclé : " + fmt(b.pertes) + " W (" + fmt(b.pAller) + " aller + " + fmt(b.pRetour) + " retour), classe " + b.classe + ", ambiance " + fmt(s.bTamb) + " °C");
     L.push("- Débit de bouclage total : " + m3(b.qRetenu) + " m³/h sur " + fmt(b.nb) + " boucle(s) (chute " + b.chute + " K ; plancher 0,2 m/s : " + m3(b.qMin) + " m³/h)");
-    L.push("- Retour d'une boucle : " + mat.label + " " + b.tube.di + "/" + b.tube.de + " pour " + m3(b.qParBoucle) + " m³/h (v = " + fmt(b.vitesse, 2) + " m/s)");
-    if (b.nb > 1) L.push("- Collecteur de retour : " + mat.label + " " + b.collecteur.di + "/" + b.collecteur.de + " (v = " + fmt(b.vitesseColl, 2) + " m/s)");
+    L.push("- Réseau aller : " + mat(b.matAller).label + " De " + b.deAller + " sur " + fmt(b.La) + " m");
+    L.push("- Retour d'une boucle : " + mr.label + " " + b.tube.di + "/" + b.tube.de + " pour " + m3(b.qParBoucle) + " m³/h (v = " + fmt(b.vitesse, 2) + " m/s)");
+    if (b.nb > 1) L.push("- Collecteur de retour : " + mr.label + " " + b.collecteur.di + "/" + b.collecteur.de + " (v = " + fmt(b.vitesseColl, 2) + " m/s)");
     L.push("- Puissance de compensation : " + fmt(b.pertes / 1000, 2) + " kW");
   }
   L.push("");
@@ -1853,6 +1929,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v6", date: "2026-08-29", titre: "Matériau de l'aller et du retour",
+    texte: "Le matériau se choisit séparément pour l'aller et pour le retour, le second reprenant le premier par défaut. Quatre gammes de diamètres commerciaux : cuivre et PVC-C PN25 et PN16 d'après le guide COSTIC, multicouche sur dimensions commerciales courantes. Les diamètres proposés suivent enfin le matériau retenu." },
   { v: "v5", date: "2026-08-29", titre: "Journal des versions",
     texte: "Le panneau \"À propos\" retrace l'historique des versions publiées. Fenêtre élargie pour l'accueillir." },
   { v: "v4", date: "2026-08-29", titre: "Date de mise à jour réelle",
@@ -1898,13 +1976,14 @@ function statsCouverture() {
   // JSON.stringify laisse tomber les défauts calculés (fonctions) : le poids annoncé est
   // bien celui des données de référence, pas celui du code.
   const donnees = JSON.stringify({ USAGES, MODES_TERT, RATIOS_LIES, RATIO_SCOLAIRE_DP,
-    COEF_LGT, CLASSES_ISOL, CUIVRE, VOLUMES_STD, FENETRE_RECHARGE, SOURCES });
+    COEF_LGT, CLASSES_ISOL, MATERIAUX, VOLUMES_STD, FENETRE_RECHARGE, SOURCES });
   return {
     usages: Object.keys(USAGES).length,
     champs: champsUsage + HYPOTHESES.length + CHAMPS_BOUCLAGE.length + CHAMPS_VERIF.length + 1,
     modes: Object.keys(MODES_TERT).length,
     volumes: VOLUMES_STD.length,
-    diametres: CUIVRE.length,
+    materiaux: Object.keys(MATERIAUX).length,
+    diametres: Object.keys(MATERIAUX).reduce((n, k) => n + MATERIAUX[k].tubes.length, 0),
     classes: Object.keys(CLASSES_ISOL).length,
     ko: Math.max(1, Math.round(new Blob([donnees]).size / 1024))
   };
@@ -1946,7 +2025,8 @@ function renderStats() {
     ligneStat("Champs de saisie", fmt(c.champs)),
     ligneStat("Modes de production en tertiaire", fmt(c.modes)),
     ligneStat("Volumes de ballon proposés", fmt(c.volumes)),
-    ligneStat("Diamètres cuivre (table COSTIC)", fmt(c.diametres)),
+    ligneStat("Matériaux de canalisation", fmt(c.materiaux)),
+    ligneStat("Diamètres commerciaux", fmt(c.diametres)),
     ligneStat("Classes d'isolation NF EN 12828", fmt(c.classes)),
     ligneStat("Versions publiées", fmt(CHANGELOG.length)),
     ligneStat("Données de référence embarquées", fmt(c.ko) + " Ko")

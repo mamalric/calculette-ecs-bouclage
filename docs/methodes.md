@@ -265,7 +265,36 @@ Solutions publiées pour éviter le multibouclage ([B1] p. 16) : regrouper les p
 - Retour de bouclage : vitesse entre 0,2 m/s (minimum NF DTU 60.11, turbulence, limite biofilm) et 0,5 m/s. Cuivre : moins de 0,3 m/s conseillé en régime permanent (corrosion-érosion).
 - Aller : 1,5 m/s maximum en colonnes et logements, 2 m/s en sous-sol ; collecteur de retour 1 m/s maximum.
 - Diamètre minimal du retour : cuivre 12/14, PVC-C 12,4/16, PEX/PB 13/16, autres matériaux 12 mm intérieur. Acier galvanisé à proscrire en bouclage ([B1] p. 67) et jamais en aval de cuivre.
-Nota matériau : la table de débits par diamètre publiée par [B1] est celle du cuivre. Pour un retour en PVC-C ou en multicouche, la calculette applique la vitesse limite du matériau (0,5 m/s au lieu de 0,3 m/s conseillé en cuivre) mais propose un diamètre en équivalent cuivre, à retraduire en dimension commerciale du matériau retenu. L'interface le signale.
+#### Matériaux et diamètres commerciaux
+
+Le matériau se choisit séparément pour l'aller et pour le retour. En pratique une boucle est posée dans un seul matériau, aller et retour étant tirés ensemble : le matériau du retour reprend donc par défaut celui de l'aller, la distinction ne servant qu'aux rénovations partielles. Le matériau de l'aller détermine les diamètres proposés et, par son diamètre extérieur, le coefficient de pertes de la classe d'isolation. Le matériau du retour détermine en plus la vitesse limite de dimensionnement.
+
+Débits correspondant aux vitesses de 0,2 m/s (minimum) et à la vitesse maximale retenue, [B1] fig. 45 p. 55. Le diamètre intérieur minimal d'un retour est de 12 mm.
+
+Cuivre, débits en L/h à 0,2 / 0,3 / 0,5 m/s. La vitesse de dimensionnement retenue est 0,3 m/s, conseillée en permanent pour limiter la corrosion-érosion aux tés et raccords :
+
+| di/de | 0,2 m/s | 0,3 m/s | 0,5 m/s |
+|---|---|---|---|
+| 12/14 | 85 | 120 | 200 |
+| 13/15 | 100 | 140 | 235 |
+| 14/16 | 115 | 165 | 275 |
+| 16/18 | 145 | 215 | 360 |
+| 20/22 | 230 | 335 | 565 |
+| 26/28 | 385 | 570 | 955 |
+| 33/35 | 620 | 920 | 1535 |
+| 38/40 | 820 | 1220 | 2040 |
+| 40/42 | 905 | 1355 | 2260 |
+| 51/54 | 1475 | 2205 | 3675 |
+| 52/54 | 1530 | 2290 | 3820 |
+| 60/64 | 2040 | 3050 | 5085 |
+
+PVC-C, débits en L/h à 0,2 / 0,5 m/s. PN25 : 12,4/16 : 90 / 215 ; 15,4/20 : 135 / 335 ; 19,4/25 : 215 / 530 ; 24,8/32 : 350 / 865 ; 31/40 : 545 / 1355 ; 38,8/50 : 855 / 2125 ; 48,8/63 : 1350 / 3365. PN16 : 21,2/25 : 255 / 635 ; 27,2/32 : 420 / 1045 ; 34/40 : 655 / 1630 ; 42,6/50 : 1030 / 2565 ; 53,6/63 : 1625 / 4060 ; 63,8/75 : 2305 / 5750.
+
+Multicouche : le guide donne les diamètres extérieurs en annexe 1 (16, 18, 20, 26, 32, 40, 50, 63 mm) avec leurs coefficients de pertes par classe d'isolation, mais **aucune table de débits**. Les débits sont donc calculés par Q = v x pi x di² / 4 sur des diamètres intérieurs commerciaux courants (12/16, 14/18, 16/20, 20/26, 26/32, 33/40, 42/50, 54/63), qui varient d'un fabricant à l'autre. CONFIANCE FAIBLE sur ces diamètres intérieurs, signalée dans l'interface : les vérifier sur la documentation du produit retenu.
+
+Nota : les valeurs publiées pour le cuivre et le PVC-C sont reprises telles quelles et non recalculées, le guide arrondissant ses débits (85 L/h annoncés contre 81 calculés pour un di de 12 mm, par exemple).
+
+Acier galvanisé : à proscrire en bouclage ([B1] p. 67) et jamais en aval d'éléments en cuivre (NF DTU 60.1). Il n'est donc pas proposé.
 
 Nota d'affichage : les tables sources sont en L/h, mais l'interface exprime tous les débits en m³/h (division par 1000, trois décimales), unité de travail de l'utilisateur.
 
