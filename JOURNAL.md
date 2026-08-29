@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v23 : raccordement du refoulement et couleur du secondaire)
+
+- L'utilisateur relit ses propres schémas et pointe ce qui sépare réellement le semi-instantané de la semi-accumulation : le raccordement du refoulement du secondaire. En semi-instantané il ne pénètre pas dans le ballon, il rejoint directement la sortie d'eau chaude sur laquelle le ballon est raccordé en dérivation ; l'échangeur produit en direct et le ballon n'est qu'un tampon sur le départ. En semi-accumulation le refoulement entre par le haut du ballon, et c'est du ballon que repart la distribution.
+- C'est appliqué, via un champ `derivation` sur le mode. Les deux schémas se distinguent désormais d'un coup d'oeil, ce qui n'était pas le cas : ils ne différaient que par la taille du ballon, alors que le montage n'est pas le même.
+- Couleur propre pour le secondaire de l'échangeur, à la demande de l'utilisateur : il partageait l'olive du départ ECS, alors que ce sont deux circuits distincts même si l'eau y est la même. Violet retenu, seule famille encore libre entre l'olive du départ, l'ambre du bouclage, le bleu de l'eau froide et le rouge du primaire. Contraste vérifié à 5,9 en thème clair et 6,8 en sombre, pour un seuil de 3 sur les tracés. En dérivation, le refoulement reste tracé en olive puisqu'il est le départ ECS : c'est précisément la distinction demandée.
+- Le mode sans maintien en température ne desservait qu'un seul puisage, ce qui donnait l'impression d'une installation amputée. Il en dessert maintenant trois, aux mêmes abscisses que les autres schémas pour que la comparaison reste immédiate, mais sur le seul niveau de la production : les étages restent vides à dessein, c'est exactement ce que la limite de 3 litres et 8 m d'antenne interdit d'atteindre.
+- Contrôle ajouté au banc : au moins deux puisages par schéma, autant d'antennes que de robinets, et surtout, selon le mode, que la charge pénètre bien dans le ballon ou au contraire qu'elle n'y pénètre pas et qu'un départ passe au-dessus.
+- Vérification : 54 croisements production x architecture ou maintien. Zéro écart.
+- Réserve non traitée, signalée à l'utilisateur : les cinq fluides se distinguent par la teinte, pas par la luminance. Le retour et le cordon sont tramés, le secondaire est plus fin que le départ, mais l'eau froide, le départ et le primaire restent trois traits pleins que seule la couleur sépare. Un jeu de tirets par circuit lèverait la dépendance à la couleur.
+
 ## 2026-08-29 (v22 : boucle de charge ouverte et cadre élargi)
 
 - L'utilisateur revient sur la convention de la v21, schémas de principe à l'appui : la boucle fermée n'est pas systématique, elle ne concerne que l'accumulation. Partout où il y a un échangeur à plaques, c'est l'eau sanitaire elle-même qui circule dans son secondaire, séparée du primaire par les plaques.

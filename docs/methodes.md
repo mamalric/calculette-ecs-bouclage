@@ -318,12 +318,19 @@ Nota d'affichage : les tables sources sont en L/h, mais l'interface exprime tous
 
 Le schéma qui accompagne les résultats n'entre dans aucun calcul : il illustre l'architecture, le mode de maintien et le mode de production retenus, pour rendre visible une différence que le tableau chiffré ne montre pas. Le tracé des réseaux suit [B1] fig. 15 p. 18-20 ; les conventions de fluides ci-dessous sont propres à l'outil et se calent sur les schémas de principe usuels de la profession.
 
-Trois fluides, trois couleurs. Ce qui distingue les modes, c'est la façon dont la chaleur passe au sanitaire, et il y a deux familles.
+Cinq circuits, cinq couleurs : eau froide sanitaire, distribution ECS, retour de bouclage, secondaire de l'échangeur quand il ne se confond pas avec le départ, et primaire en boucle fermée. Le secondaire a sa couleur propre parce que c'est un circuit distinct du départ, même si l'eau y est la même. Ce qui distingue les modes, c'est la façon dont la chaleur passe au sanitaire, et il y a deux familles.
 
 **Charge ouverte, sur le secondaire de l'échangeur.** Modes instantané, semi-instantané, semi-accumulation, et les deux modes logement à échangeur et ballon. L'eau sanitaire circule bel et bien dans le secondaire de l'échangeur à plaques, dont les plaques assurent la séparation d'avec le primaire.
 
 - En instantané, l'eau froide entre au piquage bas du secondaire, l'ECS sort au piquage haut et part aux puisages. En réseau bouclé, le retour se mélange à l'eau froide en amont de l'échangeur.
-- Dans les autres modes, une pompe de charge reprend l'eau au pied du ballon, la pousse dans le secondaire et la renvoie chaude au sommet. Le ballon est un ballon de stockage, sans serpentin. L'eau froide arrive en pied de ballon, l'ECS est puisée en tête, le retour de bouclage est repris en pied.
+- Dans les autres modes, une pompe de charge reprend l'eau au pied du ballon et la pousse dans le secondaire. Le ballon est un ballon de stockage, sans serpentin. L'eau froide arrive en pied de ballon, le retour de bouclage est repris en pied.
+
+Le raccordement du refoulement distingue ces deux derniers modes, et c'est ce que montre le schéma.
+
+- **Semi-instantané** : la sortie du secondaire ne pénètre pas dans le ballon. Elle rejoint directement la sortie d'eau chaude, sur laquelle le ballon est raccordé en dérivation. L'échangeur produit en direct et le ballon ne sert que de tampon sur le départ.
+- **Semi-accumulation** : la sortie du secondaire entre par le haut du ballon, et c'est du ballon que repart la distribution. Tout transite par le stockage.
+
+Le mode sans maintien en température fait exception au tracé des réseaux : il dessert plusieurs puisages, mais tous sur le seul niveau de la production. Les étages restent vides à dessein, puisque c'est précisément ce que la limite de 3 litres et 8 m d'antenne interdit d'atteindre.
 
 **Charge fermée, sur serpentin.** Mode accumulation seul. Le ballon est un préparateur à échangeur incorporé : le primaire circule dans le serpentin, en boucle fermée non potable, et ne rencontre nulle part l'eau sanitaire. Pas d'échangeur à plaques. Le serpentin est dessiné en partie basse, à hauteur constante, là où il réchauffe l'eau la plus froide sans brasser la stratification.
 
