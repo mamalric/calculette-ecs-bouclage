@@ -155,7 +155,7 @@ COSTIC ne publie pas d'abaques volume/puissance par mode hors habitat : la méth
 |---|---|---|---|
 | Instantané | aucun stockage, P = E_pointe / tp | sans objet (0,90 affiché) | sans objet |
 | Semi-instantané | stock couvrant 25 % de l'énergie de pointe | 0,90 (ballon stratifié sur échangeur externe, [S2] 0,80-0,95) | 4 h |
-| Semi-accumulation | volume au palier de puissance | 0,75 (ballon à échangeur incorporé, Energie+ 0,5-0,8) | 4 h |
+| Semi-accumulation | volume au palier de puissance | 0,85 (ballon stratifié chargé par un échangeur externe, [S2] 0,80-0,95) | 4 h |
 | Accumulation | stock couvrant le besoin journalier | 0,90 (ballon de stockage stratifié, [S2]) | fenêtre par usage, voir ci-dessous |
 
 Les cibles de 25 % pour le semi-instantané et le choix d'associer une technologie à chaque mode sont des conventions de l'outil, pas des valeurs publiées : elles positionnent des points de repère sur une courbe qui, elle, est calculée. L'efficacité reste modifiable pour coller au matériel réel.
@@ -313,3 +313,25 @@ Nota d'affichage : les tables sources sont en L/h, mais l'interface exprime tous
 - Ouverture supérieure ou égale à 1 mm des organes d'équilibrage (NF DTU 60.11 P1-2).
 - Perte de charge minimale de la vanne d'équilibrage : 200 mmCE (300 mmCE si mesure de débit par prises de pression), [B1] p. 61.
 - Perte de charge totale du circuit le plus défavorisé, production incluse : 5 mCE maximum ; échangeur ECS : moins de 2 mCE.
+
+## 4. Conventions du schéma de principe
+
+Le schéma qui accompagne les résultats n'entre dans aucun calcul : il illustre l'architecture, le mode de maintien et le mode de production retenus, pour rendre visible une différence que le tableau chiffré ne montre pas. Le tracé des réseaux suit [B1] fig. 15 p. 18-20 ; les conventions de fluides ci-dessous sont propres à l'outil et se calent sur les schémas de principe usuels de la profession.
+
+Cinq circuits, cinq couleurs : eau froide sanitaire, distribution ECS, retour de bouclage, secondaire de l'échangeur quand il ne se confond pas avec le départ, et primaire en boucle fermée. Le secondaire a sa couleur propre parce que c'est un circuit distinct du départ, même si l'eau y est la même. Ce qui distingue les modes, c'est la façon dont la chaleur passe au sanitaire, et il y a deux familles.
+
+**Charge ouverte, sur le secondaire de l'échangeur.** Modes instantané, semi-instantané, semi-accumulation, et les deux modes logement à échangeur et ballon. L'eau sanitaire circule bel et bien dans le secondaire de l'échangeur à plaques, dont les plaques assurent la séparation d'avec le primaire.
+
+- En instantané, l'eau froide entre au piquage bas du secondaire, l'ECS sort au piquage haut et part aux puisages. En réseau bouclé, le retour se mélange à l'eau froide en amont de l'échangeur.
+- Dans les autres modes, une pompe de charge reprend l'eau au pied du ballon et la pousse dans le secondaire. Le ballon est un ballon de stockage, sans serpentin. L'eau froide arrive en pied de ballon, le retour de bouclage est repris en pied.
+
+Le raccordement du refoulement distingue ces deux derniers modes, et c'est ce que montre le schéma.
+
+- **Semi-instantané** : la sortie du secondaire ne pénètre pas dans le ballon. Elle rejoint directement la sortie d'eau chaude, sur laquelle le ballon est raccordé en dérivation. L'échangeur produit en direct et le ballon ne sert que de tampon sur le départ.
+- **Semi-accumulation** : la sortie du secondaire entre par le haut du ballon, et c'est du ballon que repart la distribution. Tout transite par le stockage.
+
+Le mode sans maintien en température fait exception au tracé des réseaux : il dessert plusieurs puisages, mais tous sur le seul niveau de la production. Les étages restent vides à dessein, puisque c'est précisément ce que la limite de 3 litres et 8 m d'antenne interdit d'atteindre.
+
+**Charge fermée, sur serpentin.** Mode accumulation seul. Le ballon est un préparateur à échangeur incorporé : le primaire circule dans le serpentin, en boucle fermée non potable, et ne rencontre nulle part l'eau sanitaire. Pas d'échangeur à plaques. Le serpentin est dessiné en partie basse, à hauteur constante, là où il réchauffe l'eau la plus froide sans brasser la stratification.
+
+La semi-accumulation existe dans les deux montages : préparateurs à serpentin en série, ou échangeur externe chargeant un ballon stratifié. C'est le second qui est dessiné, parce qu'il correspond à l'intitulé du mode dans l'outil et à l'efficacité de stockage retenue par défaut au 2.2 (0,85, ballon stratifié chargé par un échangeur externe).
