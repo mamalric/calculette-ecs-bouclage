@@ -281,7 +281,8 @@ button.reset{
 .sch-retour{fill:none;stroke:var(--moyenne);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:6 4}
 .sch-cordon{fill:none;stroke:var(--haute);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:2 3}
 .sch-prod{fill:var(--papier);stroke:var(--encre-2);stroke-width:1.5}
-.sch-ech{fill:none;stroke:var(--encre-2);stroke-width:1.4;stroke-linejoin:round}
+.sch-ech{fill:none;stroke:var(--encre-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.sch-ech-chev{fill:none;stroke:var(--encre-2);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
 .sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:2}
 .sch-pompe-fl{fill:var(--moyenne);stroke:none}
 .sch-antenne{fill:none;stroke:var(--primaire);stroke-width:1.5;stroke-linecap:round}
@@ -1340,6 +1341,23 @@ function schRobinetsHoriz(xs, ys) {
   return o;
 }
 
+/* Échangeur à plaques, dessiné ici plutôt que repris d'une icône : corps arrondi, chevrons
+   de corrugation et quatre piquages, deux par circuit. Les chevrons sont volontairement peu
+   nombreux (trois) et légèrement plus pâles que le corps : à la taille du schéma, en mettre
+   davantage donnerait un aplat gris illisible. */
+function schEchangeur(x, y, w, h) {
+  const cx = x + w / 2, hp1 = y + 7, hp2 = y + h - 7;
+  let o = '<rect class="sch-prod" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="4"/>';
+  for (let i = 0; i < 3; i++) {
+    const yc = y + 10 + i * 7;
+    o += '<path class="sch-ech-chev" d="M' + (x + 4) + ' ' + yc + ' L' + cx + ' ' + (yc - 4) + ' L' + (x + w - 4) + ' ' + yc + '"/>';
+  }
+  // Piquages : deux à gauche (circuit primaire), deux à droite (circuit ECS).
+  o += '<path class="sch-ech" d="M' + x + ' ' + hp1 + ' h-4 M' + x + ' ' + hp2 + ' h-4'
+    + ' M' + (x + w) + ' ' + hp1 + ' h4 M' + (x + w) + ' ' + hp2 + ' h4"/>';
+  return o;
+}
+
 /* Production : le symbole suit le mode retenu dans "Hypothèses générales". Ballon d'autant
    plus haut que le mode accumule, échangeur seul en instantané, ballon seul en accumulation. */
 const PROD_SCHEMA = {
@@ -1361,7 +1379,7 @@ function modeProduction(sc) {
 
 function schProduction(modeProd, avecPompe, avecRetour) {
   const cfg = PROD_SCHEMA[modeProd] || PROD_SCHEMA.semiAccu;
-  const basB = 182, xb = 30, wb = 32;
+  const basB = 182, xb = 34, wb = 30;
   let o = "";
   let ySortie;                       // point d'où part l'aller
   if (cfg.ballon > 0) {
@@ -1373,14 +1391,16 @@ function schProduction(modeProd, avecPompe, avecRetour) {
     if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xb + wb) + ' V' + (basB - 6) + '"/>';
   }
   if (cfg.ech) {
-    // Échangeur : rectangle traversé d'un serpentin.
-    const xe = 6, ye = 150, we = 18, he = 24;
-    o += '<rect class="sch-prod" x="' + xe + '" y="' + ye + '" width="' + we + '" height="' + he + '" rx="2"/>';
-    o += '<path class="sch-ech" d="M' + (xe + 3) + ' ' + (ye + 6) + ' h12 M' + (xe + 3) + ' ' + (ye + 12) + ' h12 M' + (xe + 3) + ' ' + (ye + 18) + ' h12"/>';
-    if (cfg.ballon > 0) o += '<path class="sch-aller" d="M' + (xe + we) + ' ' + (ye + 12) + ' H' + xb + '"/>';
-    else {
-      o += '<path class="sch-aller" d="M' + (xe + we) + ' ' + (ye + 6) + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
-      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we) + ' V' + (ye + 18) + '"/>';
+    const xe = 6, ye = 146, we = 22, he = 32;
+    const hp1 = ye + 7, hp2 = ye + he - 7;
+    o += schEchangeur(xe, ye, we, he);
+    if (cfg.ballon > 0) {
+      // L'échangeur charge le ballon : sortie chaude vers le ballon.
+      o += '<path class="sch-aller" d="M' + (xe + we + 4) + ' ' + hp1 + ' H' + xb + '"/>';
+    } else {
+      // Instantané : l'échangeur alimente directement la distribution.
+      o += '<path class="sch-aller" d="M' + (xe + we + 4) + ' ' + hp1 + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
+      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 4) + ' V' + hp2 + '"/>';
     }
   }
   if (avecPompe) o += schCirculateur(92, SCH.collR, 6.5);
@@ -2226,6 +2246,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v11", date: "2026-08-29", titre: "Échangeur à plaques sur le schéma",
+    texte: "L'échangeur du schéma prend la forme d'un échangeur à plaques : corps arrondi, chevrons de corrugation et quatre piquages, deux par circuit. Il remplace le rectangle rayé qui ne disait rien de la technologie." },
   { v: "v10", date: "2026-08-29", titre: "Icône de robinet sur les puisages",
     texte: "Les puisages du schéma portent l'icône de robinet fournie, recadrée sur le corps du robinet : la goutte, trop fine, devenait illisible à la taille du dessin. Icône inlinée, sans requête externe, aux couleurs du thème." },
   { v: "v9", date: "2026-08-29", titre: "Production et robinets sur le schéma",

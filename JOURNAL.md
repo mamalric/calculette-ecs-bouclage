@@ -2,6 +2,13 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v11 : échangeur à plaques sur le schéma)
+- L'utilisateur a transmis une image d'échangeur à plaques comme inspiration pour le symbole de production. L'image portait un filigrane commercial : elle n'a pas été reprise, le symbole est dessiné à partir de zéro dans le même esprit.
+- Le symbole comporte un corps arrondi, trois chevrons de corrugation et quatre piquages, deux à gauche pour le primaire et deux à droite pour l'ECS. Il remplace le rectangle traversé de trois traits, qui ne disait rien de la technologie.
+- Choix de dessin dictés par l'échelle : trois chevrons seulement et légèrement plus pâles que le corps. En mettre davantage, comme sur l'image d'origine qui en compte huit, donnait un aplat gris illisible à la taille du schéma.
+- Défaut corrigé après contrôle : les piquages de gauche sortaient du cadre à x négatif et se trouvaient rognés. L'échangeur a été décalé de 4 px et le ballon reculé d'autant pour laisser passer les piquages de droite.
+- Vérification : tous les croisements usage x production x maintien x architecture, avec contrôle que l'échangeur est présent hors accumulation et absent en accumulation, qu'aucune forme ne sort du cadre (emprise mesurée par getBBox), et aucune coordonnée invalide. Contrôlé dans les deux thèmes.
+
 ## 2026-08-29 (v10 : icône de robinet sur les puisages)
 - L'utilisateur a fourni une icône de robinet (SVG Repo, faucet-droplet). Elle remplace le glyphe géométrique dessiné à la main pour marquer les puisages.
 - Elle n'a pas été intégrée telle quelle. Testée d'abord complète, elle donnait une tache illisible : l'icône est dessinée pour 24 px et plus, alors qu'un puisage occupe une douzaine de pixels dans le schéma. Vérifié en agrandissant le dessin au double, la forme ne se lisait toujours pas.
