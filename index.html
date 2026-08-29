@@ -111,6 +111,9 @@ header .titre{display:flex;flex-direction:column;gap:1px;min-width:0}
 header h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.3px;color:var(--encre);line-height:1.2}
 header .sub{font-size:12.5px;color:var(--discret);font-weight:400}
 header .espace{flex:1}
+/* Les actions forment un bloc : sans ce groupe, l'espace extensible qui les precede absorbe
+   la fin de la premiere ligne et n'y laisse qu'un bouton, le reste passant a la ligne. */
+header .actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .bouton-icone{
   background:transparent;border:1px solid var(--ligne);color:var(--encre-2);border-radius:var(--rayon-s);
   width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
@@ -460,10 +463,15 @@ footer.pied{
     <span class="sub">Stockage ECS et dimensionnement du bouclage - hypothèses sourcées COSTIC/ADEME, modifiables</span>
   </div>
   <span class="espace"></span>
-  <button type="button" class="btn sec noprint" id="btnImprimer" data-ico="imprimer" title="Fiche de synthèse via l'impression du navigateur">Imprimer / PDF</button>
-  <button type="button" class="btn sec noprint" id="btnExport" data-ico="presse_papier" title="Copier la fiche de synthèse au format texte">Copier la synthèse</button>
-  <button type="button" class="bouton-icone noprint" id="btnTheme" aria-label="Changer de thème"></button>
-  <button type="button" class="bouton-icone noprint" id="btnStats" data-ico="engrenage" aria-label="À propos et sources" title="À propos de l'outil"></button>
+  <div class="actions noprint">
+    <button type="button" class="btn sec" id="btnOuvrir" data-ico="ouvrir" title="Ouvrir un projet enregistré (fichier .json)">Ouvrir</button>
+    <button type="button" class="btn sec" id="btnEnregistrer" data-ico="enregistrer" title="Enregistrer tous les scénarios dans un fichier .json, à ranger avec les pièces de l'affaire">Enregistrer</button>
+    <input type="file" id="fichierProjet" accept=".json,application/json" hidden>
+    <button type="button" class="btn sec" id="btnImprimer" data-ico="imprimer" title="Fiche de synthèse via l'impression du navigateur">Imprimer / PDF</button>
+    <button type="button" class="btn sec" id="btnExport" data-ico="presse_papier" title="Copier la fiche de synthèse au format texte">Copier la synthèse</button>
+    <button type="button" class="bouton-icone" id="btnTheme" aria-label="Changer de thème"></button>
+    <button type="button" class="bouton-icone" id="btnStats" data-ico="engrenage" aria-label="À propos et sources" title="À propos de l'outil"></button>
+  </div>
 </header>
 
 <dialog id="dlgStats" class="modale noprint">
@@ -543,7 +551,7 @@ footer.pied{
 
 <footer class="pied">
   <div>Outil d'aide au pré-dimensionnement à usage professionnel. Les résultats sont des ordres de grandeur à valider par une étude détaillée ; ils ne se substituent ni aux textes réglementaires ni aux règles de l'art (arrêté du 30 novembre 2005, NF DTU 60.11, guides COSTIC et RAGE/PACTE). Sources détaillées : docs/methodes.md du projet.</div>
-  <div class="noprint">Aucune donnée n'est transmise : tout se calcule dans le navigateur, les scénarios sont enregistrés localement (localStorage).</div>
+  <div class="noprint">Aucune donnée n'est transmise : tout se calcule dans le navigateur. Les scénarios sont conservés localement (localStorage) ; utilisez « Enregistrer » pour en garder un fichier hors du navigateur.</div>
 </footer>
 
 <script>
@@ -1280,6 +1288,101 @@ function chargerEtat() {
 }
 function sauverEtat() {
   try { localStorage.setItem(CLE_STOCKAGE, JSON.stringify(etat)); } catch (e) { /* silencieux */ }
+}
+
+/* ---- Projet : enregistrement et ouverture en JSON ----
+   Le localStorage ne survit ni au changement de poste, ni au nettoyage du navigateur, ni au
+   passage du dossier à un collègue. Un fichier, lui, se range avec les autres pièces de
+   l'affaire. Le format porte son nom et son numéro : sans cela, ouvrir un JSON quelconque
+   écraserait les scénarios en cours par des données inexploitables. */
+const FORMAT_PROJET = "calculette-ecs-bouclage";
+const VERSION_PROJET = 1;
+
+/* Ne recopie que ce qui est attendu. Un fichier a pu être retouché à la main, produit par une
+   autre version, ou n'avoir rien à voir : tout champ inconnu est écarté, et un usage inconnu
+   invalide le scénario plutôt que de laisser l'interface tomber au premier rendu. */
+function normaliserScenario(sc) {
+  if (!sc || typeof sc !== "object" || Array.isArray(sc)) return null;
+  if (!USAGES[sc.usage]) return null;
+  const saisies = {};
+  const src = (sc.saisies && typeof sc.saisies === "object") ? sc.saisies : {};
+  for (const cle of Object.keys(src)) {
+    // Ces clés-là ne sont pas des saisies : les affecter reviendrait à toucher au prototype.
+    if (cle === "__proto__" || cle === "constructor" || cle === "prototype") continue;
+    const t = typeof src[cle];
+    if (t === "string" || t === "number" || t === "boolean") saisies[cle] = src[cle];
+  }
+  return { nom: typeof sc.nom === "string" ? sc.nom.slice(0, 120) : "", usage: sc.usage, saisies };
+}
+
+// null si le fichier est exploitable, sinon le motif du refus, formulé pour l'utilisateur.
+function refusProjet(lu) {
+  if (!lu || typeof lu !== "object" || Array.isArray(lu)) return "Le fichier ne contient pas un projet.";
+  if (lu.format !== FORMAT_PROJET) return "Ce fichier n'a pas été enregistré par la calculette ECS et bouclage.";
+  if (!(typeof lu.version === "number" && lu.version <= VERSION_PROJET))
+    return "Fichier enregistré par une version plus récente de l'outil. Mettez la calculette à jour avant de l'ouvrir.";
+  if (!Array.isArray(lu.scenarios) || !lu.scenarios.length) return "Le fichier ne contient aucun scénario.";
+  return null;
+}
+
+function nomFichierProjet() {
+  // Accents et espaces retirés : un nom de fichier doit survivre au transport et au partage.
+  const propre = (scenarioActif().nom || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase().slice(0, 60);
+  const d = new Date(), p2 = n => String(n).padStart(2, "0");
+  return "calculette-ecs_" + (propre || "projet") + "_"
+    + d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + ".json";
+}
+
+function enregistrerProjet() {
+  const contenu = JSON.stringify({
+    format: FORMAT_PROJET, version: VERSION_PROJET, outil: CHANGELOG[0].v,
+    enregistre: new Date().toISOString(),
+    scenarios: etat.scenarios, actif: etat.actif
+  }, null, 2);
+  const url = URL.createObjectURL(new Blob([contenu], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomFichierProjet();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Révocation différée : révoquée dans la foulée, l'URL peut l'être avant que le
+  // téléchargement n'ait démarré.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  flashBouton("btnEnregistrer", "valider", "Projet enregistré", "enregistrer", "Enregistrer");
+}
+
+function ouvrirProjet(fichier) {
+  const lecteur = new FileReader();
+  lecteur.onerror = () => alert("Lecture du fichier impossible.");
+  lecteur.onload = () => {
+    let lu;
+    try { lu = JSON.parse(lecteur.result); }
+    catch (e) { alert("Fichier illisible : ce n'est pas du JSON valide."); return; }
+    const refus = refusProjet(lu);
+    if (refus) { alert(refus); return; }
+    const scenarios = lu.scenarios.map(normaliserScenario).filter(Boolean);
+    if (!scenarios.length) {
+      alert("Aucun scénario exploitable : les types de bâtiment que contient ce fichier sont inconnus de cette version.");
+      return;
+    }
+    const perdus = lu.scenarios.length - scenarios.length;
+    /* Ouvrir remplace, c'est ce qu'on attend d'un fichier de projet. Mais le travail en cours
+       ne disparaît pas sans un mot : la confirmation dit ce qui sera perdu et combien. */
+    const n = scenarios.length, m = etat.scenarios.length;
+    if (!confirm("Ouvrir « " + fichier.name + " » ?\n\n"
+        + n + (n > 1 ? " scénarios remplaceront " : " scénario remplacera ")
+        + (m > 1 ? "les " + m + " scénarios en cours." : "le scénario en cours.")
+        + (perdus ? "\n\n" + perdus + " scénario(s) du fichier ont un type de bâtiment inconnu : ils seront ignorés." : "")
+        + "\n\nEnregistrez le travail en cours si vous voulez le conserver.")) return;
+    const actif = Number.isInteger(lu.actif) && lu.actif >= 0 && lu.actif < n ? lu.actif : 0;
+    etat = { scenarios: scenarios, actif: actif };
+    sauverEtat();
+    rendreTout();
+    flashBouton("btnOuvrir", "valider", "Projet ouvert", "ouvrir", "Ouvrir");
+  };
+  lecteur.readAsText(fichier);
 }
 function scenarioActif() { return etat.scenarios[etat.actif]; }
 
@@ -2319,9 +2422,16 @@ async function copierSynthese() {
     ta.value = txt; document.body.appendChild(ta);
     ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
   }
-  // innerHTML et non textContent : le bouton porte une icône qu'il faut redessiner.
-  $("btnExport").innerHTML = ico("valider", 16) + "Synthèse copiée !";
-  setTimeout(() => { $("btnExport").innerHTML = ico("presse_papier", 16) + "Copier la synthèse"; }, 1800);
+  flashBouton("btnExport", "valider", "Synthèse copiée !", "presse_papier", "Copier la synthèse");
+}
+
+/* Confirmation brève sur le bouton lui-même. innerHTML et non textContent : le bouton porte
+   une icône qu'il faut redessiner. */
+function flashBouton(id, icoOk, texteOk, icoNormal, texteNormal) {
+  const b = $(id);
+  if (!b) return;
+  b.innerHTML = ico(icoOk, 16) + texteOk;
+  setTimeout(() => { b.innerHTML = ico(icoNormal, 16) + texteNormal; }, 1800);
 }
 
 /* ---- Icônes (tracés Lucide, inlinés : aucune requête externe) ---- */
@@ -2353,6 +2463,8 @@ const TRACES_ICONES = {
   livre: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
   base_donnees: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
   dossier: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  enregistrer: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  ouvrir: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
   historique: '<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',
   reglages: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>'
 };
@@ -2407,6 +2519,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v24", date: "2026-08-29", titre: "Enregistrer et ouvrir un projet",
+    texte: "Les scénarios ne vivaient que dans le navigateur : ni changement de poste, ni nettoyage du cache, ni passage du dossier à un collègue. Deux boutons enregistrent l'ensemble des scénarios dans un fichier JSON et le relisent. Le fichier porte son format et son numéro de version, de sorte qu'un JSON étranger est refusé avec un motif au lieu d'écraser le travail en cours, et l'ouverture demande confirmation en disant ce qui sera remplacé." },
   { v: "v23", date: "2026-08-29", titre: "Raccordement du refoulement et couleur du secondaire",
     texte: "Le semi-instantané et la semi-accumulation se distinguent par le raccordement du refoulement, ce que le schéma ne montrait pas. En semi-instantané la sortie du secondaire ne pénètre pas dans le ballon : elle rejoint la sortie d'eau chaude, sur laquelle le ballon est raccordé en dérivation. En semi-accumulation elle entre par le haut du ballon, d'où repart la distribution. Le secondaire de l'échangeur reçoit sa couleur propre, qu'il partageait jusqu'ici avec le départ ECS. Le mode sans maintien dessert enfin plusieurs puisages au lieu d'un seul." },
   { v: "v22", date: "2026-08-29", titre: "Boucle de charge ouverte et cadre élargi",
@@ -2639,6 +2753,14 @@ function initialiser() {
   });
   $("btnImprimer").addEventListener("click", () => window.print());
   $("btnExport").addEventListener("click", copierSynthese);
+  $("btnEnregistrer").addEventListener("click", enregistrerProjet);
+  $("btnOuvrir").addEventListener("click", () => $("fichierProjet").click());
+  $("fichierProjet").addEventListener("change", ev => {
+    const f = ev.target.files && ev.target.files[0];
+    // Le champ est remis à zéro sans quoi rouvrir le même fichier n'émettrait plus d'événement.
+    ev.target.value = "";
+    if (f) ouvrirProjet(f);
+  });
   rendreTout();
 }
 document.addEventListener("DOMContentLoaded", initialiser);
