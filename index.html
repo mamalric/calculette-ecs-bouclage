@@ -283,7 +283,9 @@ button.reset{
   margin-top:14px;padding:12px 14px;border:1px solid var(--ligne);border-radius:var(--rayon);
   background:var(--papier-2);
 }
-.schema svg{display:block;width:100%;height:auto;max-width:420px;margin:0 auto}
+.schema svg{display:block;width:100%;height:auto;max-width:520px;margin:0 auto}
+/* La vignette de legende garde sa taille propre : sans cela elle heriterait du 100 %. */
+.schema .sch-legende svg{width:30px}
 .schema .sch-legende{
   display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;
   margin-top:10px;font-size:11.5px;color:var(--discret);
@@ -307,6 +309,9 @@ button.reset{
 .sch-serpentin{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .sch-charge{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .sch-froid{fill:none;stroke:var(--froid);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+/* Boucle de charge : c'est de l'eau sanitaire, donc la couleur de l'ECS, mais un trait plus
+   fin que la distribution pour qu'on ne la confonde pas avec le depart vers les puisages. */
+.sch-charge-san{fill:none;stroke:var(--primaire);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:2}
 .sch-pompe-fl{fill:var(--moyenne);stroke:none}
 .sch-antenne{fill:none;stroke:var(--primaire);stroke-width:1.5;stroke-linecap:round}
@@ -1323,13 +1328,19 @@ function valeursScenario(scenario) {
    l'architecture retenue. Ce sont des schémas de principe, pas des plans : ils
    illustrent les descriptions de [B1] fig. 15, sans respecter d'échelle.
    ================================================================ */
-const SCH = { w: 340, h: 236, x0: 74, bas: 150, collA: 162, collR: 178, solY: 156 };
+/* dx : le bâtiment et les réseaux sont décalés vers la droite d'autant, pour dégager la
+   largeur du local technique. Les fonctions d'architecture continuent de raisonner dans leur
+   repère d'origine, à partir de x0 ; c'est le groupe qui les porte qui est translaté, ce qui
+   évite de rejouer une à une leurs coordonnées. Le bloc de production, lui, n'est pas
+   translaté : il vise x0 + dx. */
+const SCH = { w: 398, h: 236, x0: 74, dx: 58, bas: 150, collA: 162, collR: 178, solY: 156 };
 
 function schCadre() {
-  return '<rect class="sch-bat" x="76" y="18" width="242" height="138" rx="3"/>'
-    + '<line class="sch-bat" x1="76" y1="64" x2="318" y2="64"/>'
-    + '<line class="sch-bat" x1="76" y1="110" x2="318" y2="110"/>'
-    + '<line class="sch-sol" x1="6" y1="' + SCH.solY + '" x2="334" y2="' + SCH.solY + '"/>';
+  const g = 76 + SCH.dx, d = 318 + SCH.dx;
+  return '<rect class="sch-bat" x="' + g + '" y="18" width="242" height="138" rx="3"/>'
+    + '<line class="sch-bat" x1="' + g + '" y1="64" x2="' + d + '" y2="64"/>'
+    + '<line class="sch-bat" x1="' + g + '" y1="110" x2="' + d + '" y2="110"/>'
+    + '<line class="sch-sol" x1="6" y1="' + SCH.solY + '" x2="' + (SCH.w - 6) + '" y2="' + SCH.solY + '"/>';
 }
 
 /* Circulateur : cercle avec triangle orienté dans le sens de circulation, symbole usuel.
@@ -1422,28 +1433,38 @@ function schSerpentin(x, y, w, h, tours, xSortie) {
    plus haut que le mode accumule, échangeur seul en instantané, ballon seul en accumulation. */
 /* Technologie associée à chaque mode, et hauteur du ballon proportionnée au volume stocké.
 
-   Convention de tracé, qui vaut pour tous les modes disposant d'un ballon : le secondaire de
-   l'échangeur est une boucle fermée, non potable, qui alimente le serpentin. L'eau sanitaire
-   ne circule jamais dans l'échangeur : elle arrive froide en pied de ballon, se réchauffe au
-   contact du serpentin et repart en haut. Les deux fluides ne se rencontrent nulle part.
+   La façon dont la chaleur passe au sanitaire dépend du mode, et c'est ce que distingue le
+   champ "charge". Deux familles, conformes aux schémas de principe usuels :
 
-   L'instantané est la seule exception, et elle est physique, pas graphique : produire de
-   l'ECS sans stockage suppose un échange direct vers l'eau sanitaire. Son échangeur est donc
-   l'échangeur ECS lui-même, avec l'eau froide raccordée à son secondaire, et le libellé le
-   dit. */
+   - charge "directe" et "ouverte", soit tous les modes bâtis autour d'un échangeur à
+     plaques externe : l'eau sanitaire circule dans le secondaire de l'échangeur. En
+     instantané elle part directement aux puisages ; sinon une pompe de charge la fait tourner
+     entre le pied du ballon et l'échangeur, et elle revient chaude en tête. Le ballon n'a pas
+     de serpentin : c'est un ballon de stockage, pas un préparateur.
+
+   - charge "fermée", accumulation seule : le ballon est un préparateur à serpentin. Le
+     primaire circule dans le serpentin, en boucle fermée non potable, et ne rencontre nulle
+     part l'eau sanitaire. Pas d'échangeur à plaques.
+
+   La semi-accumulation existe dans les deux montages, préparateurs à serpentin en série ou
+   échangeur externe chargeant un ballon stratifié. C'est le second qui est dessiné : il
+   correspond à l'intitulé du mode dans l'outil et à son efficacité de stockage par défaut.
+
+   Dans les deux cas l'eau froide arrive en pied de ballon, ou au secondaire de l'échangeur
+   quand il n'y a pas de ballon. */
 const PROD_SCHEMA = {
-  instantane:   { ballon: 0,  ech: true,
-                  libelle: "instantané", techno: "échangeur ECS, eau froide au secondaire" },
-  semiInst:     { ballon: 50, ech: true,
-                  libelle: "semi-instantané", techno: "échangeur et ballon, faible volume" },
-  semiAccu:     { ballon: 64, ech: true,
-                  libelle: "semi-accumulation", techno: "échangeur et ballon à serpentin" },
-  accumulation: { ballon: 80, ech: false,
+  instantane:   { ballon: 0,  charge: "directe",
+                  libelle: "instantané", techno: "échangeur à plaques, eau froide au secondaire" },
+  semiInst:     { ballon: 58, charge: "ouverte",
+                  libelle: "semi-instantané", techno: "échangeur externe, boucle de charge sanitaire" },
+  semiAccu:     { ballon: 74, charge: "ouverte",
+                  libelle: "semi-accumulation", techno: "échangeur externe, pompe de charge, ballon stratifié" },
+  accumulation: { ballon: 92, charge: "fermee",
                   libelle: "accumulation", techno: "ballon de stockage à serpentin" },
-  permanente:   { ballon: 64, ech: true,
-                  libelle: "échangeur + ballon", techno: "charge permanente" },
-  arrets:       { ballon: 64, ech: true,
-                  libelle: "échangeur + ballon", techno: "charge intermittente" }
+  permanente:   { ballon: 74, charge: "ouverte",
+                  libelle: "échangeur + ballon", techno: "échangeur externe, charge permanente" },
+  arrets:       { ballon: 74, charge: "ouverte",
+                  libelle: "échangeur + ballon", techno: "échangeur externe, charge intermittente" }
 };
 function modeProduction(sc) {
   if (sc.usage === "logement") {
@@ -1456,57 +1477,58 @@ function modeProduction(sc) {
 
 function schProduction(modeProd, avecPompe, avecRetour) {
   const cfg = PROD_SCHEMA[modeProd] || PROD_SCHEMA.semiAccu;
-  const basB = 178, xb = 46, wb = 26;
-  const xe = 5, ye = 132, we = 28, he = 46;      // échangeur à plaques, format portrait
+  const xr = SCH.x0 + SCH.dx;                    // départ des réseaux, après translation
+  const basB = 178, xb = 76, wb = 38;
+  const xe = 8, ye = 116, we = 32, he = 54;      // échangeur à plaques, format portrait
   const P = schEchPorts(xe, ye, we, he);
+  const xp = xe + we + 5;                        // abscisse des piquages secondaires
   /* Le serpentin occupe toujours la même place, en partie basse du ballon : c'est là qu'il
-     réchauffe l'eau la plus froide sans brasser la stratification. Ses deux raccordements
-     restent bas, l'échangeur ne rejoint jamais le haut du ballon. */
-  const serpHaut = basB - 28, serpBas = basB - 4, xSerp = 38;
-  /* L'eau froide court sous le bloc de production, seule hauteur libre entre le pied des
-     appareils et les étiquettes. Sans elle le schéma ne disait pas d'où venait l'eau
-     sanitaire, et le primaire semblait ressortir dans le réseau consommé. */
+     réchauffe l'eau la plus froide sans brasser la stratification. */
+  const serpHaut = basB - 28, serpBas = basB - 4, xSerp = 60;
+  // L'eau froide court sous le bloc, seule hauteur libre entre le pied des appareils et les
+  // étiquettes.
   const yFroid = 190;
+  const hautB = basB - cfg.ballon;
   let o = "";
 
   if (cfg.ballon > 0) {
-    const hautB = basB - cfg.ballon;
-    o += '<rect class="sch-prod" x="' + xb + '" y="' + hautB + '" width="' + wb + '" height="' + cfg.ballon + '" rx="8"/>';
+    o += '<rect class="sch-prod" x="' + xb + '" y="' + hautB + '" width="' + wb + '" height="' + cfg.ballon + '" rx="9"/>';
     // Trait de stratification : l'eau chaude occupe le haut du ballon.
-    o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 9) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 9) + '"/>';
-    o += schSerpentin(xb + 6, serpHaut, wb - 12, serpBas - serpHaut, 3, xSerp);
+    o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 10) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 10) + '"/>';
     // Eau froide sanitaire en pied de ballon : c'est elle qui remplit le volume potable.
-    o += '<path class="sch-froid" d="M0 ' + yFroid + ' H' + (xb + 6) + ' V' + basB + '"/>';
+    o += '<path class="sch-froid" d="M0 ' + yFroid + ' H' + (xb + 8) + ' V' + basB + '"/>';
     // ECS puisée en haut du ballon, retour de bouclage repris en pied.
-    o += '<path class="sch-aller" d="M' + (xb + wb) + ' ' + (hautB + 4) + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
-    if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xb + wb) + ' V' + (basB - 6) + '"/>';
+    o += '<path class="sch-aller" d="M' + (xb + wb) + ' ' + (hautB + 5) + ' H' + xr + ' V' + SCH.collA + '"/>';
+    if (avecRetour) o += '<path class="sch-retour" d="M' + xr + ' ' + SCH.collR + ' H' + (xb + wb) + ' V' + (basB - 7) + '"/>';
   }
 
-  if (cfg.ech) {
-    o += schEchangeur(xe, ye, we, he);
-    if (cfg.ballon > 0) {
-      /* Secondaire en boucle fermée : les deux piquages de droite rejoignent les extrémités
-         du serpentin, toutes deux en partie basse. Ce fluide chauffe le ballon sans jamais
-         se mêler à l'eau sanitaire, qui reste de l'autre côté de la paroi du serpentin. */
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' V' + serpHaut + ' H' + xSerp + '"/>';
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pBas + ' V' + serpBas + ' H' + xSerp + '"/>';
-    } else {
-      /* Instantané : sans ballon, l'échange se fait forcément vers l'eau sanitaire. L'eau
-         froide entre au piquage bas du secondaire et l'ECS sort au piquage haut ; le
-         primaire reste cantonné aux deux piquages de gauche. */
-      o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
-      o += '<path class="sch-froid" d="M0 ' + yFroid + ' H' + (xe + we + 5) + ' V' + P.pBas + '"/>';
-      // Le retour de bouclage se mélange à l'eau froide en amont de l'échangeur.
-      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 12) + ' V' + yFroid + ' H' + (xe + we + 5) + '"/>';
-    }
-  } else {
-    /* Accumulation : pas d'échangeur externe, le primaire alimente directement le serpentin.
-       Ses deux amorces partent du bord du cadre, comme l'eau froide : arrêtées en pleine
-       page elles ressemblaient à des canalisations sectionnées. */
+  if (cfg.charge === "fermee") {
+    /* Préparateur à serpentin : le primaire y circule en boucle fermée et n'entre jamais en
+       contact avec l'eau sanitaire. Ses deux amorces partent du bord du cadre, comme l'eau
+       froide : arrêtées en pleine page elles ressemblaient à des canalisations sectionnées. */
+    o += schSerpentin(xb + 7, serpHaut, wb - 14, serpBas - serpHaut, 3, xSerp);
     o += '<path class="sch-charge" d="M0 ' + serpHaut + ' H' + xSerp + ' M0 ' + serpBas + ' H' + xSerp + '"/>';
+  } else {
+    o += schEchangeur(xe, ye, we, he);
+    if (cfg.charge === "ouverte") {
+      /* Boucle de charge sanitaire : la pompe reprend l'eau au pied du ballon, la pousse dans
+         le secondaire de l'échangeur et la renvoie chaude en tête. C'est bien de l'eau
+         potable qui traverse l'échangeur, séparée du primaire par les plaques. */
+      o += '<path class="sch-charge-san" d="M' + xb + ' ' + serpBas + ' H' + xp + ' V' + P.pBas + '"/>';
+      o += '<path class="sch-charge-san" d="M' + xp + ' ' + P.pHaut + ' V' + (hautB - 9) + ' H' + (xb + 8) + ' V' + hautB + '"/>';
+      o += schCirculateur((xb + xp) / 2, serpBas, 6);
+    } else {
+      /* Instantané : sans stockage, l'échange se fait directement vers l'eau sanitaire. L'eau
+         froide entre au piquage bas du secondaire, l'ECS sort au piquage haut, et le primaire
+         reste cantonné aux deux piquages de gauche. */
+      o += '<path class="sch-aller" d="M' + xp + ' ' + P.pHaut + ' H' + xr + ' V' + SCH.collA + '"/>';
+      o += '<path class="sch-froid" d="M0 ' + yFroid + ' H' + xp + ' V' + P.pBas + '"/>';
+      // Le retour de bouclage se mélange à l'eau froide en amont de l'échangeur.
+      if (avecRetour) o += '<path class="sch-retour" d="M' + xr + ' ' + SCH.collR + ' H' + (xp + 26) + ' V' + yFroid + ' H' + xp + '"/>';
+    }
   }
 
-  if (avecPompe) o += schCirculateur(92, SCH.collR, 6.5);
+  if (avecPompe) o += schCirculateur(xr + 18, SCH.collR, 6.5);
   // Deux lignes : le mode, puis la technologie qu'il suppose.
   return o + schEtiquette(4, 202, cfg.libelle, "start")
     + schEtiquette(4, 215, cfg.techno, "start");
@@ -1632,6 +1654,7 @@ function schVignette(type) {
   if (type === "pompe") return d + '<line class="sch-retour" x1="3" y1="8" x2="27" y2="8"/>' + schCirculateur(15, 8, 6) + "</svg>";
   if (type === "froid") return d + '<line class="sch-froid" x1="3" y1="8" x2="27" y2="8"/></svg>';
   if (type === "primaire") return d + '<line class="sch-charge" x1="3" y1="8" x2="27" y2="8"/></svg>';
+  if (type === "chargeSan") return d + '<line class="sch-charge-san" x1="3" y1="8" x2="27" y2="8"/>' + schCirculateur(15, 8, 5) + "</svg>";
   if (type === "robinet") return d + schRobinet(2, 8, 8, 0, 16) + "</svg>";
   return d + "</svg>";
 }
@@ -1649,10 +1672,12 @@ function rendreSchema() {
   const prod = modeProduction(sc);
   const titre = (boucle ? ARCHI_BOUCLAGE[cle].label : MAINTIEN[cle].label)
     + " - production " + PROD_SCHEMA[prod].libelle;
-  /* Le primaire n'apparaît que si un serpentin est dessiné, c'est-à-dire dès qu'il y a un
-     ballon : en instantané l'échange se fait directement vers l'eau sanitaire. */
-  const fluides = [["froid", "eau froide"]]
-    .concat(PROD_SCHEMA[prod].ballon > 0 ? [["primaire", "primaire (boucle fermée)"]] : []);
+  /* La légende ne nomme que ce que le mode dessine réellement : le primaire en boucle fermée
+     n'existe qu'avec un serpentin, la pompe de charge qu'avec une boucle ouverte. */
+  const ch = PROD_SCHEMA[prod].charge;
+  const fluides = [["froid", "eau froide"]].concat(
+    ch === "fermee" ? [["primaire", "primaire (boucle fermée)"]]
+    : ch === "ouverte" ? [["chargeSan", "boucle de charge"]] : []);
   const legende = (boucle
     ? [["aller", "aller"], ["retour", "retour"], ["pompe", "circulateur"], ["robinet", "puisage"]]
     : (maintien === "tracage" ? [["aller", "distribution"], ["cordon", "cordon chauffant"], ["robinet", "puisage"]]
@@ -1663,7 +1688,7 @@ function rendreSchema() {
     + '<svg viewBox="0 0 ' + SCH.w + " " + SCH.h + '" role="img" aria-label="Schéma de principe : ' + ech(titre) + '">'
     + schCadre()
     + schProduction(prod, boucle, boucle)
-    + dessin()
+    + '<g transform="translate(' + SCH.dx + ' 0)">' + dessin() + "</g>"
     + "</svg>"
     + '<div class="sch-legende">'
     + legende.map(l => "<span>" + schVignette(l[0]) + ech(l[1]) + "</span>").join("")
@@ -2358,6 +2383,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v22", date: "2026-08-29", titre: "Boucle de charge ouverte et cadre élargi",
+    texte: "Correction de la convention posée à la version précédente : la boucle fermée sur serpentin ne concerne que l'accumulation. Tous les modes bâtis autour d'un échangeur à plaques font circuler l'eau sanitaire dans son secondaire, avec une pompe de charge entre le pied du ballon et l'échangeur dès qu'il y a stockage. La semi-accumulation retrouve son échangeur externe, conformément à son intitulé et à son efficacité de stockage. Le cadre du schéma est élargi et le bloc de production desserré : échangeur, ballon et pompe de charge avaient trop peu de place pour se lire." },
   { v: "v21", date: "2026-08-29", titre: "Eau sanitaire et primaire séparés au schéma",
     texte: "Le schéma ne montrait aucune arrivée d'eau froide : le primaire semblait ressortir dans le réseau consommé. L'eau froide est désormais tracée, dans sa propre couleur, jusqu'au pied de ballon. Sur tous les modes à ballon, le secondaire de l'échangeur est une boucle fermée non potable qui alimente le serpentin, et ne rencontre nulle part l'eau sanitaire. L'instantané, qui suppose un échange direct, reçoit l'eau froide au piquage bas de son secondaire et délivre l'ECS au piquage haut." },
   { v: "v20", date: "2026-08-29", titre: "Ballons à la bonne échelle",

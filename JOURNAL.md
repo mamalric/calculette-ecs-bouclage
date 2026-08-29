@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v22 : boucle de charge ouverte et cadre élargi)
+
+- L'utilisateur revient sur la convention de la v21, schémas de principe à l'appui : la boucle fermée n'est pas systématique, elle ne concerne que l'accumulation. Partout où il y a un échangeur à plaques, c'est l'eau sanitaire elle-même qui circule dans son secondaire, séparée du primaire par les plaques.
+- Correction appliquée. Le champ `charge` du schéma de production distingue désormais trois cas : `directe` en instantané, l'ECS partant du secondaire vers les puisages ; `ouverte` en semi-instantané, semi-accumulation et dans les deux modes logement, une pompe de charge faisant tourner l'eau sanitaire entre le pied du ballon et l'échangeur ; `fermee` en accumulation seule, le primaire circulant dans le serpentin d'un préparateur.
+- J'ai d'abord basculé la semi-accumulation en boucle fermée sur la foi d'une première référence, un montage à préparateurs en série. C'était une sur-interprétation : la référence suivante, un échangeur externe avec pompe de charge à débit constant, correspond à l'intitulé du mode dans l'outil et à son efficacité de stockage par défaut de 0,85, justifiée précisément par un ballon stratifié chargé par un échangeur externe. La phrase de l'utilisateur, boucle fermée uniquement en accumulation, était exacte au mot près. Aucune valeur de calcul n'a bougé : le dessin rejoint enfin ce que le calcul supposait déjà.
+- La documentation note que la semi-accumulation existe dans les deux montages et pourquoi c'est le second qui est représenté.
+- Le retour de la boucle de charge arrive par le sommet du ballon et non par son flanc : au même niveau que le départ ECS, les deux formaient un seul trait continu traversant le ballon.
+- Cadre élargi de 340 à 398 px sur demande de l'utilisateur, la zone production étant à l'étroit alors que le SVG avait de la marge. Le bâtiment et les réseaux sont portés par un groupe translaté de 58 px, ce qui évite de rejouer une à une les coordonnées des sept architectures ; seul le bloc de production travaille dans le repère élargi. Échangeur, ballon et pompe de charge agrandis en conséquence.
+- Vérification : 54 croisements production x architecture ou maintien, avec contrôle qu'un mode n'affiche jamais à la fois un serpentin et une boucle de charge ouverte, que la boucle ouverte est complète, que le primaire ne croise aucun tracé sanitaire, que l'eau froide atteint le pied du ballon, que le serpentin reste cantonné et à ordonnée constante, qu'aucun texte n'en chevauche un autre et que rien ne sort du cadre, translation comprise. Zéro écart.
+
 ## 2026-08-29 (v21 : eau sanitaire et primaire séparés au schéma)
 - Défaut signalé par l'utilisateur sur la production instantanée : le secondaire de l'échangeur ne peut pas se mélanger à l'eau propre consommée par les utilisateurs. Le cas dessiné ne pouvait pas exister.
 - Diagnostic : le schéma ne montrait aucune arrivée d'eau froide. Rien ne disait d'où venait l'eau sanitaire, si bien que le primaire semblait entrer à gauche de l'échangeur et ressortir à droite dans le réseau consommé. C'est cette absence, plus que le tracé lui-même, qui rendait le dessin faux.

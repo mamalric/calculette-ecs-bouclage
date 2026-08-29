@@ -316,16 +316,15 @@ Nota d'affichage : les tables sources sont en L/h, mais l'interface exprime tous
 
 ## 4. Conventions du schéma de principe
 
-Le schéma qui accompagne les résultats n'entre dans aucun calcul : il illustre l'architecture, le mode de maintien et le mode de production retenus, pour rendre visible une différence que le tableau chiffré ne montre pas. Le tracé des réseaux suit [B1] fig. 15 p. 18-20 ; les conventions de fluides ci-dessous sont propres à l'outil.
+Le schéma qui accompagne les résultats n'entre dans aucun calcul : il illustre l'architecture, le mode de maintien et le mode de production retenus, pour rendre visible une différence que le tableau chiffré ne montre pas. Le tracé des réseaux suit [B1] fig. 15 p. 18-20 ; les conventions de fluides ci-dessous sont propres à l'outil et se calent sur les schémas de principe usuels de la profession.
 
-Trois fluides, trois couleurs, et surtout deux circuits qui ne communiquent jamais.
+Trois fluides, trois couleurs. Ce qui distingue les modes, c'est la façon dont la chaleur passe au sanitaire, et il y a deux familles.
 
-- **Eau froide sanitaire** : arrive du réseau de ville, en pied de ballon, ou au piquage bas du secondaire de l'échangeur en production instantanée.
-- **ECS et retour de bouclage** : le circuit sanitaire proprement dit, puisé en haut du ballon, repris en pied.
-- **Primaire** : le fluide chauffant. Sur tous les modes disposant d'un ballon, le secondaire de l'échangeur à plaques est une **boucle fermée non potable** qui alimente le serpentin du ballon. Ce fluide ne rencontre nulle part l'eau sanitaire : l'échange se fait à travers la paroi du serpentin.
+**Charge ouverte, sur le secondaire de l'échangeur.** Modes instantané, semi-instantané, semi-accumulation, et les deux modes logement à échangeur et ballon. L'eau sanitaire circule bel et bien dans le secondaire de l'échangeur à plaques, dont les plaques assurent la séparation d'avec le primaire.
 
-Le serpentin est toujours dessiné dans la partie basse du ballon, à hauteur constante, et raccordé par ses deux extrémités basses. C'est là qu'il réchauffe l'eau la plus froide sans brasser la stratification, dont le maintien conditionne l'efficacité R retenue au 2.2.
+- En instantané, l'eau froide entre au piquage bas du secondaire, l'ECS sort au piquage haut et part aux puisages. En réseau bouclé, le retour se mélange à l'eau froide en amont de l'échangeur.
+- Dans les autres modes, une pompe de charge reprend l'eau au pied du ballon, la pousse dans le secondaire et la renvoie chaude au sommet. Le ballon est un ballon de stockage, sans serpentin. L'eau froide arrive en pied de ballon, l'ECS est puisée en tête, le retour de bouclage est repris en pied.
 
-**Exception de l'instantané.** Produire de l'ECS sans stockage suppose un échange direct vers l'eau sanitaire : il n'existe pas de variante à boucle fermée. Sur ce mode l'échangeur dessiné est donc l'échangeur ECS lui-même, l'eau froide entrant à son piquage bas et l'ECS sortant au piquage haut, le primaire restant cantonné aux deux piquages de gauche. En réseau bouclé, le retour se mélange à l'eau froide en amont de l'échangeur. La séparation des fluides reste assurée par les plaques, comme sur tout échangeur ECS.
+**Charge fermée, sur serpentin.** Mode accumulation seul. Le ballon est un préparateur à échangeur incorporé : le primaire circule dans le serpentin, en boucle fermée non potable, et ne rencontre nulle part l'eau sanitaire. Pas d'échangeur à plaques. Le serpentin est dessiné en partie basse, à hauteur constante, là où il réchauffe l'eau la plus froide sans brasser la stratification.
 
-En accumulation, il n'y a pas d'échangeur externe : le primaire alimente directement le serpentin.
+La semi-accumulation existe dans les deux montages : préparateurs à serpentin en série, ou échangeur externe chargeant un ballon stratifié. C'est le second qui est dessiné, parce qu'il correspond à l'intitulé du mode dans l'outil et à l'efficacité de stockage retenue par défaut au 2.2 (0,85, ballon stratifié chargé par un échangeur externe).
