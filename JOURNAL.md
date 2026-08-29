@@ -2,6 +2,12 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v20 : ballons à la bonne échelle)
+- Défaut signalé par l'utilisateur : le ballon du semi-instantané est bien trop petit. Vérification faite, le serpentin, dont la place est fixe depuis la version précédente, en occupait 70 pour cent de la hauteur, ce qui contredit le principe même d'un serpentin cantonné à la partie basse.
+- Mon contrôle automatique était passé à côté : il vérifiait que le centre de gravité du serpentin est dans la moitié basse du ballon, ce qui restait vrai de justesse, mais pas qu'il n'envahit pas le ballon entier. Règle ajoutée : le serpentin ne doit pas dépasser 55 pour cent de la hauteur du ballon.
+- Ballons agrandis en conséquence, en conservant la progression des volumes : semi-instantané de 34 à 50, semi-accumulation et logement de 46 à 64, accumulation de 64 à 80. Le serpentin y occupe désormais 48, 38 et 30 pour cent respectivement.
+- Vérification : tous les croisements usage x production x maintien x architecture, avec présence et cantonnement du serpentin, position basse constante, aucun raccordement en partie haute, aucun texte chevauché, rien hors cadre, aucun résultat invalide.
+
 ## 2026-08-29 (v19 : serpentin sur tous les ballons)
 - Demande de l'utilisateur : le serpentin doit être visible dans tous les ballons, toujours au même endroit en partie basse, et ne pas être raccordé à l'échangeur par le haut.
 - C'est appliqué. Le serpentin est tracé dès qu'il y a un ballon, à position fixe : bas calé à la même ordonnée quel que soit le mode, et hauteur constante sur trois passes. Ses deux extrémités sortent du ballon à la même abscisse.

@@ -1419,15 +1419,15 @@ function schSerpentin(x, y, w, h, tours, xSortie) {
 const PROD_SCHEMA = {
   instantane:   { ballon: 0,  ech: true,
                   libelle: "instantané", techno: "échangeur à plaques seul" },
-  semiInst:     { ballon: 34, ech: true,
+  semiInst:     { ballon: 50, ech: true,
                   libelle: "semi-instantané", techno: "échangeur et ballon, faible volume" },
-  semiAccu:     { ballon: 46, ech: true,
+  semiAccu:     { ballon: 64, ech: true,
                   libelle: "semi-accumulation", techno: "échangeur et ballon à serpentin" },
-  accumulation: { ballon: 64, ech: false,
+  accumulation: { ballon: 80, ech: false,
                   libelle: "accumulation", techno: "ballon de stockage à serpentin" },
-  permanente:   { ballon: 46, ech: true,
+  permanente:   { ballon: 64, ech: true,
                   libelle: "échangeur + ballon", techno: "charge permanente" },
-  arrets:       { ballon: 46, ech: true,
+  arrets:       { ballon: 64, ech: true,
                   libelle: "échangeur + ballon", techno: "charge intermittente" }
 };
 function modeProduction(sc) {
@@ -2321,6 +2321,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v20", date: "2026-08-29", titre: "Ballons à la bonne échelle",
+    texte: "Les ballons étaient trop petits, au point que le serpentin en occupait 70 % en semi-instantané. Ils sont agrandis pour que le serpentin reste cantonné à leur partie basse, tout en gardant la progression des volumes d'un mode à l'autre." },
   { v: "v19", date: "2026-08-29", titre: "Serpentin sur tous les ballons",
     texte: "Le serpentin est désormais visible dans tous les ballons, toujours à la même place en partie basse. L'échangeur le rejoint par ses deux extrémités basses : plus aucun raccordement ne monte au sommet du ballon." },
   { v: "v18", date: "2026-08-29", titre: "Échangeur au format portrait",
