@@ -281,8 +281,12 @@ button.reset{
 .sch-retour{fill:none;stroke:var(--moyenne);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:6 4}
 .sch-cordon{fill:none;stroke:var(--haute);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:2 3}
 .sch-prod{fill:var(--papier);stroke:var(--encre-2);stroke-width:1.5}
-.sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:1.6}
-.sch-pt{fill:var(--encre-2)}
+.sch-ech{fill:none;stroke:var(--encre-2);stroke-width:1.4;stroke-linejoin:round}
+.sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:2}
+.sch-pompe-fl{fill:var(--moyenne);stroke:none}
+.sch-antenne{fill:none;stroke:var(--primaire);stroke-width:1.5;stroke-linecap:round}
+.sch-robinet{fill:none;stroke:var(--encre-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.sch-legende svg{vertical-align:-3px}
 .sch-txt{fill:var(--encre-2);font-size:9.5px;font-family:inherit}
 .sch-txt-p{fill:var(--discret);font-size:9px;font-family:inherit}
 
@@ -1292,26 +1296,93 @@ function valeursScenario(scenario) {
    l'architecture retenue. Ce sont des schémas de principe, pas des plans : ils
    illustrent les descriptions de [B1] fig. 15, sans respecter d'échelle.
    ================================================================ */
-const SCH = { w: 340, h: 200, hautMur: 26, bas: 152, collA: 164, collR: 178 };
+const SCH = { w: 340, h: 200, x0: 68, bas: 150, collA: 162, collR: 178, solY: 156 };
 
 function schCadre() {
-  return '<rect class="sch-bat" x="72" y="18" width="246" height="140" rx="3"/>'
-    + '<line class="sch-bat" x1="72" y1="65" x2="318" y2="65"/>'
-    + '<line class="sch-bat" x1="72" y1="111" x2="318" y2="111"/>'
-    + '<line class="sch-sol" x1="8" y1="158" x2="332" y2="158"/>';
+  return '<rect class="sch-bat" x="76" y="18" width="242" height="138" rx="3"/>'
+    + '<line class="sch-bat" x1="76" y1="64" x2="318" y2="64"/>'
+    + '<line class="sch-bat" x1="76" y1="110" x2="318" y2="110"/>'
+    + '<line class="sch-sol" x1="6" y1="' + SCH.solY + '" x2="334" y2="' + SCH.solY + '"/>';
 }
-function schProduction(avecPompe) {
-  return '<rect class="sch-prod" x="14" y="132" width="42" height="34" rx="4"/>'
-    + '<line class="sch-prod" x1="14" y1="141" x2="56" y2="141"/>'
-    + '<text class="sch-txt" x="35" y="156" text-anchor="middle">ECS</text>'
-    + (avecPompe ? '<circle class="sch-pompe" cx="66" cy="' + SCH.collR + '" r="6"/>' : '');
+
+/* Circulateur : cercle avec triangle orienté dans le sens de circulation, symbole usuel.
+   L'ancien petit cercle vide passait inaperçu. */
+function schCirculateur(cx, cy, r) {
+  const t = r * 0.5;
+  return '<circle class="sch-pompe" cx="' + cx + '" cy="' + cy + '" r="' + r + '"/>'
+    + '<path class="sch-pompe-fl" d="M' + (cx + t) + ' ' + (cy - t) + ' L' + (cx - t * 1.3) + ' ' + cy
+      + ' L' + (cx + t) + ' ' + (cy + t) + ' Z"/>';
 }
-// Points de puisage : de petits points sur les niveaux desservis.
-function schPuisages(xs, ys) {
+
+/* Puisage : une antenne piquée sur la canalisation, terminée par un robinet. Les points
+   pleins d'avant se confondaient avec le trait du circulateur dans la légende. */
+function schRobinet(x, y, dx, dy) {
+  const xe = x + dx, ye = y + dy;
+  return '<path class="sch-antenne" d="M' + x + ' ' + y + ' L' + xe + ' ' + ye + '"/>'
+    + '<path class="sch-robinet" d="M' + (xe - 3) + ' ' + ye + ' H' + (xe + 3)
+      + ' M' + xe + ' ' + ye + ' V' + (ye + 4)
+      + ' M' + xe + ' ' + (ye + 4) + ' L' + (xe + 3) + ' ' + (ye + 6.5) + '"/>';
+}
+// Robinets piqués sur une colonne (antenne horizontale) ou sur un tronçon horizontal (antenne verticale).
+function schRobinetsCol(xs, ys, dir) {
   let o = "";
-  for (const x of xs) for (const y of ys) o += '<circle class="sch-pt" cx="' + x + '" cy="' + y + '" r="2.4"/>';
+  for (const x of xs) for (const y of ys) o += schRobinet(x, y, dir * 9, 0);
   return o;
 }
+function schRobinetsHoriz(xs, ys) {
+  let o = "";
+  for (const x of xs) for (const y of ys) o += schRobinet(x, y, 0, 7);
+  return o;
+}
+
+/* Production : le symbole suit le mode retenu dans "Hypothèses générales". Ballon d'autant
+   plus haut que le mode accumule, échangeur seul en instantané, ballon seul en accumulation. */
+const PROD_SCHEMA = {
+  instantane:   { ballon: 0,  ech: true,  libelle: "instantané" },
+  semiInst:     { ballon: 26, ech: true,  libelle: "semi-instantané" },
+  semiAccu:     { ballon: 44, ech: true,  libelle: "semi-accumulation" },
+  accumulation: { ballon: 62, ech: false, libelle: "accumulation" },
+  permanente:   { ballon: 44, ech: true,  libelle: "échangeur + ballon" },
+  arrets:       { ballon: 44, ech: true,  libelle: "échangeur + ballon" }
+};
+function modeProduction(sc) {
+  if (sc.usage === "logement") {
+    const v = sc.saisies ? sc.saisies["logement.mode"] : null;
+    return PROD_SCHEMA[v] ? v : "permanente";
+  }
+  const v = sc.saisies ? sc.saisies["modeT"] : null;
+  return PROD_SCHEMA[v] ? v : "semiAccu";
+}
+
+function schProduction(modeProd, avecPompe, avecRetour) {
+  const cfg = PROD_SCHEMA[modeProd] || PROD_SCHEMA.semiAccu;
+  const basB = 182, xb = 30, wb = 32;
+  let o = "";
+  let ySortie;                       // point d'où part l'aller
+  if (cfg.ballon > 0) {
+    const hautB = basB - cfg.ballon;
+    o += '<rect class="sch-prod" x="' + xb + '" y="' + hautB + '" width="' + wb + '" height="' + cfg.ballon + '" rx="7"/>';
+    o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 8) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 8) + '"/>';
+    ySortie = hautB + 4;
+    o += '<path class="sch-aller" d="M' + (xb + wb) + ' ' + ySortie + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
+    if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xb + wb) + ' V' + (basB - 6) + '"/>';
+  }
+  if (cfg.ech) {
+    // Échangeur : rectangle traversé d'un serpentin.
+    const xe = 6, ye = 150, we = 18, he = 24;
+    o += '<rect class="sch-prod" x="' + xe + '" y="' + ye + '" width="' + we + '" height="' + he + '" rx="2"/>';
+    o += '<path class="sch-ech" d="M' + (xe + 3) + ' ' + (ye + 6) + ' h12 M' + (xe + 3) + ' ' + (ye + 12) + ' h12 M' + (xe + 3) + ' ' + (ye + 18) + ' h12"/>';
+    if (cfg.ballon > 0) o += '<path class="sch-aller" d="M' + (xe + we) + ' ' + (ye + 12) + ' H' + xb + '"/>';
+    else {
+      o += '<path class="sch-aller" d="M' + (xe + we) + ' ' + (ye + 6) + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
+      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we) + ' V' + (ye + 18) + '"/>';
+    }
+  }
+  if (avecPompe) o += schCirculateur(92, SCH.collR, 6.5);
+  // Ancré à gauche : centré, un libellé long comme "semi-accumulation" débordait du cadre.
+  return o + schEtiquette(4, 194, cfg.libelle, "start");
+}
+
 function schEtiquette(x, y, t, ancre) {
   return '<text class="sch-txt-p" x="' + x + '" y="' + y + '" text-anchor="' + (ancre || "middle") + '">' + t + "</text>";
 }
@@ -1320,105 +1391,117 @@ function schEtiquette(x, y, t, ancre) {
    dessert les puisages, et le retour ramène l'eau vers elle. */
 const SCHEMAS_ARCHI = {
   colonnes: () => {
-    const cols = [120, 195, 270];
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 296';
-    for (const x of cols) o += ' M' + x + ' ' + SCH.collA + ' V 34';
+    const cols = [130, 205, 280];
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 294';
+    for (const x of cols) o += ' M' + x + ' ' + SCH.collA + ' V 32';
     o += '"/>';
-    o += '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308';
-    for (const x of cols) o += ' M' + x + ' 34 H ' + (x + 14) + ' V ' + SCH.collR;
+    o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 308';
+    for (const x of cols) o += ' M' + x + ' 32 H ' + (x + 14) + ' V ' + SCH.collR;
     o += '"/>';
-    return o + schPuisages(cols, [46, 92, 138]) + schEtiquette(195, 194, "1 boucle par colonne");
+    return o + schRobinetsCol(cols, [44, 90, 136], -1) + schEtiquette(200, 194, "1 boucle par colonne");
   },
   horizontale: () => {
-    const niv = [44, 90, 136];
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 44';
-    for (const y of niv) o += ' M100 ' + y + ' H 300';
+    const niv = [42, 88, 134];
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 104 V 42';
+    for (const y of niv) o += ' M104 ' + y + ' H 302';
     o += '"/>';
-    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 114 V 54';
-    for (const y of niv) r += ' M300 ' + y + ' V ' + (y + 10) + ' H 114';
+    let r = '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 118 V 52';
+    for (const y of niv) r += ' M302 ' + y + ' V ' + (y + 10) + ' H 118';
     r += '"/>';
-    return o + r + schPuisages([150, 200, 250, 296], niv) + schEtiquette(195, 194, "1 boucle par niveau, en faux-plafond");
+    return o + r + schRobinetsHoriz([160, 215, 270], niv) + schEtiquette(200, 194, "1 boucle par niveau, en faux-plafond");
   },
   parapluieAller: () => {
-    const cols = [160, 230, 300];
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 30 H 300';
-    for (const x of cols) o += ' M' + x + ' 30 V ' + SCH.bas;
+    const cols = [170, 240, 305];
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 104 V 28 H 305';
+    for (const x of cols) o += ' M' + x + ' 28 V ' + SCH.bas;
     o += '"/>';
-    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308';
+    let r = '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 312';
     for (const x of cols) r += ' M' + x + ' ' + SCH.bas + ' V ' + SCH.collR;
     r += '"/>';
-    return o + r + schPuisages(cols, [46, 92, 138])
-      + schEtiquette(100, 24, "collecteur aller commun", "start")
-      + schEtiquette(195, 194, "les colonnes descendent : retours très courts");
+    return o + r + schRobinetsCol(cols, [44, 90, 136], -1)
+      + schEtiquette(104, 23, "collecteur aller commun", "start")
+      + schEtiquette(200, 194, "les colonnes descendent : retours très courts");
   },
   parapluieRetour: () => {
-    const cols = [160, 230, 300];
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 308';
-    for (const x of cols) o += ' M' + x + ' ' + SCH.collA + ' V 30';
+    const cols = [170, 240, 305];
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 312';
+    for (const x of cols) o += ' M' + x + ' ' + SCH.collA + ' V 28';
     o += '"/>';
-    let r = '<path class="sch-retour" d="M160 30 H 300 M100 30 H 160 M100 30 V ' + SCH.collR + ' H 66"/>';
-    return o + r + schPuisages(cols, [46, 92, 138])
-      + schEtiquette(100, 24, "collecteur retour commun", "start")
-      + schEtiquette(195, 194, "un seul retour vertical pour toutes les colonnes");
+    let r = '<path class="sch-retour" d="M170 28 H 305 M104 28 H 170 M104 28 V ' + SCH.collR + ' H ' + SCH.x0 + '"/>';
+    return o + r + schRobinetsCol(cols, [44, 90, 136], -1)
+      + schEtiquette(104, 23, "collecteur retour commun", "start")
+      + schEtiquette(200, 194, "un seul retour vertical pour toutes les colonnes");
   },
   parapluieColonne: () => {
-    const cols = [225, 300];
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 130 V 30 H 300';
-    for (const x of cols) o += ' M' + x + ' 30 V ' + SCH.bas;
+    const cols = [235, 305];
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 140 V 28 H 305';
+    for (const x of cols) o += ' M' + x + ' 28 V ' + SCH.bas;
     o += '"/>';
-    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308';
+    let r = '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 312';
     for (const x of cols) r += ' M' + x + ' ' + SCH.bas + ' V ' + SCH.collR;
-    r += ' M130 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
-    return o + r + schPuisages([130].concat(cols), [46, 92, 138])
-      + schEtiquette(130, 24, "1re colonne commune", "start")
-      + schEtiquette(195, 194, "la 1re colonne dessert aussi : la plus courte, mais coupure générale");
+    r += ' M140 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
+    return o + r + schRobinetsCol([140].concat(cols), [44, 90, 136], -1)
+      + schEtiquette(140, 23, "1re colonne commune", "start")
+      + schEtiquette(200, 194, "la 1re colonne dessert aussi : coupure générale si on l'isole");
   },
   uInverse: () => {
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 276'
-      + ' M120 ' + SCH.collA + ' V 32 H 180 V ' + SCH.bas
-      + ' M246 ' + SCH.collA + ' V 32 H 300 V ' + SCH.bas + '"/>';
-    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308'
-      + ' M180 ' + SCH.bas + ' V ' + SCH.collR
-      + ' M300 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
-    return o + r + schPuisages([120, 180, 246, 300], [46, 92, 138])
-      + schEtiquette(150, 26, "U inversé")
-      + schEtiquette(195, 194, "2 colonnes par boucle : moitié moins de boucles");
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 262'
+      + ' M130 ' + SCH.collA + ' V 30 H 192 V ' + SCH.bas
+      + ' M262 ' + SCH.collA + ' V 30 H 310 V ' + SCH.bas + '"/>';
+    let r = '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 316'
+      + ' M192 ' + SCH.bas + ' V ' + SCH.collR
+      + ' M310 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
+    return o + r + schRobinetsCol([130, 262], [44, 90, 136], -1) + schRobinetsCol([192, 310], [44, 90, 136], 1)
+      + schEtiquette(161, 25, "U inversé")
+      + schEtiquette(200, 194, "2 colonnes par boucle : moitié moins de boucles");
   },
   horizCourt: () => {
-    const niv = [44, 90, 136];
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 44';
-    for (const y of niv) o += ' M100 ' + y + ' H 300';
+    const niv = [42, 88, 134];
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 104 V 42';
+    for (const y of niv) o += ' M104 ' + y + ' H 302';
     o += '"/>';
     // Le retour ne retrace pas l'aller : il rejoint la colonne de retour en direct.
-    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 114 V 54';
-    for (const y of niv) r += ' M300 ' + y + ' L 114 ' + (y + 14);
+    let r = '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 118 V 52';
+    for (const y of niv) r += ' M302 ' + y + ' L 118 ' + (y + 14);
     r += '"/>';
-    return o + r + schPuisages([150, 200, 250, 296], niv)
-      + schEtiquette(195, 194, "retours en direct, sans retracer l'aller");
+    return o + r + schRobinetsHoriz([160, 215, 270], niv)
+      + schEtiquette(200, 194, "retours en direct, sans retracer l'aller");
   }
 };
 
 const SCHEMAS_MAINTIEN = {
   tracage: () => {
-    const niv = [44, 90, 136];
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 44';
-    for (const y of niv) o += ' M100 ' + y + ' H 300';
+    const niv = [42, 88, 134];
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 104 V 42';
+    for (const y of niv) o += ' M104 ' + y + ' H 302';
     o += '"/>';
     // Le cordon suit exactement le tracé de l'aller : pas de seconde canalisation.
-    let c = '<path class="sch-cordon" d="M58 ' + (SCH.collA - 4) + ' H 96 V 40';
-    for (const y of niv) c += ' M96 ' + (y - 4) + ' H 300';
+    let c = '<path class="sch-cordon" d="M' + SCH.x0 + ' ' + (SCH.collA - 4) + ' H 100 V 38';
+    for (const y of niv) c += ' M100 ' + (y - 4) + ' H 302';
     c += '"/>';
-    return o + c + schPuisages([150, 200, 250, 296], niv)
-      + '<rect class="sch-prod" x="10" y="98" width="34" height="18" rx="3"/>'
-      + schEtiquette(27, 111, "230 V")
-      + schEtiquette(195, 194, "aucune canalisation de retour, aucun circulateur");
+    return o + c + schRobinetsHoriz([160, 215, 270], niv)
+      + '<rect class="sch-prod" x="6" y="112" width="30" height="16" rx="3"/>'
+      + schEtiquette(21, 124, "230 V")
+      + schEtiquette(200, 194, "aucune canalisation de retour, aucun circulateur");
   },
   sans: () => {
-    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 120 V 138 M120 138 H 160"/>';
-    return o + schPuisages([164], [138])
-      + schEtiquette(195, 194, "admis sous 3 litres et 8 m d'antenne");
+    let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 130 V 136 H 158"/>';
+    return o + schRobinet(158, 136, 9, 0)
+      + schEtiquette(200, 194, "admis sous 3 litres et 8 m d'antenne");
   }
 };
+
+// Vignettes de légende : mêmes symboles que le dessin, pour lever la confusion entre
+// circulateur et puisage, qui se ressemblaient en simples traits.
+function schVignette(type) {
+  const d = '<svg width="30" height="16" viewBox="0 0 30 16" aria-hidden="true">';
+  if (type === "aller") return d + '<line class="sch-aller" x1="3" y1="8" x2="27" y2="8"/></svg>';
+  if (type === "retour") return d + '<line class="sch-retour" x1="3" y1="8" x2="27" y2="8"/></svg>';
+  if (type === "cordon") return d + '<line class="sch-aller" x1="3" y1="11" x2="27" y2="11"/><line class="sch-cordon" x1="3" y1="6" x2="27" y2="6"/></svg>';
+  if (type === "pompe") return d + '<line class="sch-retour" x1="3" y1="8" x2="27" y2="8"/>' + schCirculateur(15, 8, 6) + "</svg>";
+  if (type === "robinet") return d + schRobinet(4, 5, 9, 0) + "</svg>";
+  return d + "</svg>";
+}
 
 function rendreSchema() {
   const zone = $("zoneSchema");
@@ -1430,26 +1513,26 @@ function rendreSchema() {
   const dessin = boucle ? SCHEMAS_ARCHI[cle] : SCHEMAS_MAINTIEN[cle];
   if (!dessin) { zone.innerHTML = ""; return; }
 
-  const titre = boucle ? ARCHI_BOUCLAGE[cle].label : MAINTIEN[cle].label;
+  const prod = modeProduction(sc);
+  const titre = (boucle ? ARCHI_BOUCLAGE[cle].label : MAINTIEN[cle].label)
+    + " - production " + PROD_SCHEMA[prod].libelle;
   const legende = boucle
-    ? [["sch-aller", "aller"], ["sch-retour", "retour"], ["sch-pompe", "circulateur"]]
-    : (maintien === "tracage" ? [["sch-aller", "distribution"], ["sch-cordon", "cordon chauffant"]]
-                              : [["sch-aller", "distribution"]]);
+    ? [["aller", "aller"], ["retour", "retour"], ["pompe", "circulateur"], ["robinet", "puisage"]]
+    : (maintien === "tracage" ? [["aller", "distribution"], ["cordon", "cordon chauffant"], ["robinet", "puisage"]]
+                              : [["aller", "distribution"], ["robinet", "puisage"]]);
 
   zone.innerHTML = '<div class="sch-titre">' + ech(titre) + "</div>"
     + '<svg viewBox="0 0 ' + SCH.w + " " + SCH.h + '" role="img" aria-label="Schéma de principe : ' + ech(titre) + '">'
     + schCadre()
-    + schProduction(boucle)
+    + schProduction(prod, boucle, boucle)
     + dessin()
     + "</svg>"
     + '<div class="sch-legende">'
-    + legende.map(l => '<span><i style="border-top-color:var(' +
-        (l[0] === "sch-aller" ? "--primaire" : l[0] === "sch-retour" ? "--moyenne" : l[0] === "sch-cordon" ? "--haute" : "--encre-2") +
-        ')' + (l[0] === "sch-retour" || l[0] === "sch-cordon" ? ";border-top-style:dashed" : "") + '"></i>' + ech(l[1]) + "</span>").join("")
-    + '<span><i style="border-top-color:var(--encre-2)"></i>puisages</span></div>'
+    + legende.map(l => "<span>" + schVignette(l[0]) + ech(l[1]) + "</span>").join("")
+    + "</div>"
     + '<div class="sch-note">Schéma de principe sur un bâtiment R+2, sans échelle : il illustre '
     + (boucle ? "le tracé décrit par [B1] fig. 15" : "le principe du mode retenu")
-    + ', pas votre installation.</div>';
+    + ", ainsi que le mode de production retenu, et non votre installation.</div>";
 }
 
 /* ================================================================
@@ -2137,6 +2220,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v9", date: "2026-08-29", titre: "Production et robinets sur le schéma",
+    texte: "Le schéma montre aussi le mode de production retenu : échangeur seul en instantané, ballon d'autant plus haut que le mode accumule. Les puisages sont dessinés en antennes piquées terminées par un robinet, le circulateur en cercle fléché, et la légende reprend ces symboles au lieu de traits gris identiques." },
   { v: "v8", date: "2026-08-29", titre: "Alignement des champs de saisie",
     texte: "Un intitulé passant sur deux lignes décalait son champ vers le bas par rapport à ses voisins. La hauteur de deux lignes est désormais réservée à tous les intitulés : les champs d'une même rangée sont alignés, dans les quatre panneaux de saisie." },
   { v: "v7", date: "2026-08-29", titre: "Schémas de principe",

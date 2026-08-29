@@ -2,6 +2,17 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v9 : production et robinets sur le schéma)
+- Trois demandes de l'utilisateur sur le schéma, toutes justifiées. Le mode de production n'y figurait pas alors qu'il est choisi juste au-dessus. Le circulateur, un simple cercle vide de 6 px, était invisible. Et la légende distinguait "circulateur" de "puisages" par deux traits gris identiques, ce qui n'expliquait rien.
+- Production : le symbole suit désormais le mode retenu dans "Hypothèses générales". Échangeur seul en instantané, échangeur plus ballon d'autant plus haut que le mode accumule, ballon seul en accumulation. Le titre du schéma le nomme, et le libellé figure sous le dessin.
+- Puisages : remplacés par des antennes piquées sur la canalisation, terminées par un robinet (corps, poignée et bec). Les points pleins précédents ne se lisaient pas comme des puisages.
+- Circulateur : cercle fléché dans le sens de circulation, symbole usuel, tracé plus épais et posé bien en évidence sur le retour.
+- Légende : chaque entrée porte maintenant sa vignette SVG, reprise du dessin, au lieu d'un trait de couleur. La confusion entre circulateur et puisage disparaît.
+- Régression corrigée en cours de route : en supprimant le symbole de production du mode traçage, je l'avais fait disparaître alors que l'ECS y est toujours produite. Seul le retour doit disparaître, pas la production. Corrigé par un paramètre distinct.
+- Deux corrections de cadrage : le libellé de production, centré, débordait du cadre pour "semi-accumulation" ; il est ancré à gauche. La boîte 230 V du traçage a été redescendue pour ne plus chevaucher la production.
+- Vérification : tous les croisements usage x mode de production x mode de maintien x architecture, avec contrôle de la présence d'un robinet, de la présence du circulateur en bouclage et de son absence hors bouclage, du mode de production dans le titre, et d'aucune coordonnée invalide. Aucune erreur.
+- Note de méthode : mes premières captures d'écran montraient un schéma périmé. En cause, mon utilitaire de test qui clonait la zone sans retirer son attribut `id` : deux éléments portaient le même identifiant et `getElementById` renvoyait le clone. L'application n'était pas en cause, ce que la lecture directe de la zone a confirmé.
+
 ## 2026-08-29 (v8 : alignement des champs de saisie)
 - Défaut signalé par l'utilisateur : un intitulé passant sur deux lignes décalait son champ vers le bas par rapport aux champs voisins de la même rangée. Visible par exemple sur "Température ambiante des locaux traversés" à côté de "Classe d'isolation", mais présent à plusieurs endroits.
 - Correction retenue : réserver la hauteur de deux lignes à tous les intitulés de champ (`min-height: 2.7em`), ce qui met les contrôles au même niveau quel que soit le nombre de lignes réellement occupées. C'est la solution du Sélectionneur de radiateurs, d'où vient le thème.
