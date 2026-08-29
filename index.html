@@ -303,7 +303,7 @@ footer.pied{
 .ico{vertical-align:-3px;flex:none}
 .modale{
   border:none;padding:0;border-radius:var(--rayon);background:var(--papier);color:var(--encre);
-  box-shadow:0 8px 32px rgba(35,31,32,.22);width:min(560px,94vw);max-height:86vh;overflow:hidden;
+  box-shadow:0 8px 32px rgba(35,31,32,.22);width:min(760px,94vw);max-height:88vh;overflow:hidden;
 }
 [data-theme="dark"] .modale{box-shadow:0 8px 32px rgba(0,0,0,.6);border:1px solid var(--ligne)}
 .modale::backdrop{background:rgba(0,0,0,.45)}
@@ -313,7 +313,7 @@ footer.pied{
 }
 .modale-tete h2{margin:0;font-size:15px;font-weight:700;color:var(--encre);display:flex;align-items:center;gap:9px;border:none;padding:0;background:none}
 .modale-tete .espace{flex:1}
-.modale-corps{padding:16px 18px;overflow:auto;max-height:calc(86vh - 56px);font-size:13px}
+.modale-corps{padding:16px 18px;overflow:auto;max-height:calc(88vh - 56px);font-size:13px}
 .stats-groupe{margin:0 0 18px}
 .stats-groupe:last-child{margin-bottom:0}
 .stats-groupe h3{
@@ -325,6 +325,22 @@ footer.pied{
 .stats-liste dd{margin:0;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 /* Les titres de sources sont longs : à gauche et en graisse normale, ils restent lisibles. */
 .stats-liste.gauche dd{text-align:left;font-weight:400}
+
+/* Journal des versions : une puce par version, l'étiquette à gauche en pastille accentuée,
+   la date et le texte alignés à droite d'elle. */
+.changelog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.changelog li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:baseline}
+.changelog .cl-ver{
+  grid-row:1 / span 2;align-self:start;
+  display:inline-block;min-width:34px;text-align:center;
+  padding:2px 8px;border-radius:11px;font-size:11.5px;font-weight:700;
+  background:var(--primaire-fond);color:var(--primaire-encre);border:1px solid var(--primaire-bord);
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.changelog li.actuelle .cl-ver{background:var(--primaire);color:var(--sur-primaire);border-color:var(--primaire)}
+.changelog .cl-titre{font-weight:600;color:var(--encre)}
+.changelog .cl-date{font-weight:400;color:var(--discret);font-size:11.5px}
+.changelog .cl-txt{color:var(--encre-2);line-height:1.5}
 
 /* ---- impression : fiche de synthese uniquement, toujours sur fond clair */
 @media print{
@@ -1783,6 +1799,7 @@ const TRACES_ICONES = {
   livre: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
   base_donnees: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
   dossier: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  historique: '<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',
   reglages: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>'
 };
 function ico(nom, taille) {
@@ -1832,11 +1849,29 @@ function initTheme() {
    Ce que contient l'outil : version, périmètre couvert et registre des sources. Les
    compteurs sont calculés à l'ouverture, jamais recopiés à la main, pour qu'ils ne
    puissent pas mentir après l'ajout d'un usage, d'un ratio ou d'une source. */
+/* Journal des versions. Dates relevées sur les étiquettes git du dépôt, pas de mémoire.
+   La version affichée plus haut en découle : une seule source, donc pas de divergence
+   possible entre l'en-tête du panneau et cette liste. */
+const CHANGELOG = [
+  { v: "v5", date: "2026-08-29", titre: "Journal des versions",
+    texte: "Le panneau \"À propos\" retrace l'historique des versions publiées. Fenêtre élargie pour l'accueillir." },
+  { v: "v4", date: "2026-08-29", titre: "Date de mise à jour réelle",
+    texte: "La date affichée par ce panneau vient de l'horodatage du fichier au lieu d'une constante écrite à la main, qui était déjà fausse. Heure incluse." },
+  { v: "v3", date: "2026-08-29", titre: "Modes de maintien en température",
+    texte: "Réseau bouclé, traçage électrique ou distribution sans maintien, le couple aller plus retour ne valant que pour le premier. Sept architectures de bouclage du guide COSTIC avec leurs écarts de pertes, et découpage du réseau en plusieurs boucles pour éviter les diamètres de retour aberrants. Correction : le matériau du retour réellement choisi est affiché." },
+  { v: "v2", date: "2026-08-28", titre: "Thèmes retravaillés et aides contextuelles",
+    texte: "Palettes claire et sombre refondues, surfaces neutres et contraste AA vérifié par calcul. Cases à cocher au style du thème. Les aides de saisie passent derrière un bouton (i), en ambre quand elles signalent une hypothèse non normée." },
+  { v: "v1", date: "2026-08-28", titre: "Favicon et icônes de structure",
+    texte: "Identité visuelle reprise du Sélectionneur de radiateurs : favicon, icônes Lucide sur les en-têtes, les boutons et les bandeaux, et une icône par type de bâtiment dans les onglets de scénarios." },
+  { v: "v0", date: "2026-08-28", titre: "Première version validée",
+    texte: "7 usages, stockage par méthode COSTIC en habitat et bilan de pointe en tertiaire, bouclage complet, multi-scénarios, vérification d'installation existante, impression et thème clair/sombre." }
+];
+
 const APP = {
   nom: "Calculette ECS et Bouclage",
   // Suffixe "+dev" tant que le travail n'est pas fusionné dans main : le panneau dit
   // ainsi clairement si l'on regarde la version publiée ou une version en cours.
-  version: "v4",
+  version: CHANGELOG[0].v,
   methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
   icones: "Lucide, licence ISC"
 };
@@ -1899,6 +1934,13 @@ function renderStats() {
     ligneStat("Fichier", "HTML autonome, hors ligne")
   ]));
 
+  blocs.push('<section class="stats-groupe"><h3>' + ico("historique", 13) + "Journal des versions</h3><ol class=\"changelog\">"
+    + CHANGELOG.map((c, i) => '<li' + (i === 0 ? ' class="actuelle"' : '') + '>'
+        + '<span class="cl-ver">' + ech(c.v) + "</span>"
+        + '<span class="cl-titre">' + ech(c.titre) + ' <span class="cl-date">' + ech(new Date(c.date).toLocaleDateString("fr-FR")) + "</span></span>"
+        + '<span class="cl-txt">' + ech(c.texte) + "</span></li>").join("")
+    + "</ol></section>");
+
   blocs.push(groupeStats("Périmètre couvert", "base_donnees", [
     ligneStat("Usages", fmt(c.usages)),
     ligneStat("Champs de saisie", fmt(c.champs)),
@@ -1906,6 +1948,7 @@ function renderStats() {
     ligneStat("Volumes de ballon proposés", fmt(c.volumes)),
     ligneStat("Diamètres cuivre (table COSTIC)", fmt(c.diametres)),
     ligneStat("Classes d'isolation NF EN 12828", fmt(c.classes)),
+    ligneStat("Versions publiées", fmt(CHANGELOG.length)),
     ligneStat("Données de référence embarquées", fmt(c.ko) + " Ko")
   ]));
 
