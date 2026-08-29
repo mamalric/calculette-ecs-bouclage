@@ -2,6 +2,14 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v10 : icône de robinet sur les puisages)
+- L'utilisateur a fourni une icône de robinet (SVG Repo, faucet-droplet). Elle remplace le glyphe géométrique dessiné à la main pour marquer les puisages.
+- Elle n'a pas été intégrée telle quelle. Testée d'abord complète, elle donnait une tache illisible : l'icône est dessinée pour 24 px et plus, alors qu'un puisage occupe une douzaine de pixels dans le schéma. Vérifié en agrandissant le dessin au double, la forme ne se lisait toujours pas.
+- Solution retenue : recadrer le symbole sur le seul corps du robinet, en écartant la goutte. Le viewBox passe de 0 0 512 512 à 44 0 410 352, si bien que le robinet remplit sa boîte au lieu d'en occuper les deux tiers. À taille réelle, le corps, les poignées et le bec se distinguent.
+- L'icône est inlinée dans un `<symbol>` unique, référencé par `<use>` : le fichier reste autonome, aucune requête externe, et un seul exemplaire du tracé pour la dizaine de puisages. Elle est en aplat, donc elle prend la couleur du thème par `fill` (vérifié en clair et en sombre).
+- Attribution ajoutée dans le panneau "À propos". POINT À TRANCHER PAR L'UTILISATEUR : le fichier fourni ne mentionne aucune licence, et SVG Repo héberge des icônes sous licences variées. Le dépôt étant public, la licence de cette icône précise est à confirmer sur sa fiche d'origine avant de considérer la publication comme sûre.
+- Vérification : tous les croisements usage x production x maintien x architecture, présence du symbole et d'au moins un robinet, aucune coordonnée invalide, et un seul identifiant `ico-robinet` dans le document.
+
 ## 2026-08-29 (v9 : production et robinets sur le schéma)
 - Trois demandes de l'utilisateur sur le schéma, toutes justifiées. Le mode de production n'y figurait pas alors qu'il est choisi juste au-dessus. Le circulateur, un simple cercle vide de 6 px, était invisible. Et la légende distinguait "circulateur" de "puisages" par deux traits gris identiques, ce qui n'expliquait rien.
 - Production : le symbole suit désormais le mode retenu dans "Hypothèses générales". Échangeur seul en instantané, échangeur plus ballon d'autant plus haut que le mode accumule, ballon seul en accumulation. Le titre du schéma le nomme, et le libellé figure sous le dessin.

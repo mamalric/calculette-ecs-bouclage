@@ -285,7 +285,8 @@ button.reset{
 .sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:2}
 .sch-pompe-fl{fill:var(--moyenne);stroke:none}
 .sch-antenne{fill:none;stroke:var(--primaire);stroke-width:1.5;stroke-linecap:round}
-.sch-robinet{fill:none;stroke:var(--encre-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.sch-robinet{fill:var(--encre-2);stroke:none}
+.sch-defs{position:absolute;width:0;height:0;overflow:hidden}
 .sch-legende svg{vertical-align:-3px}
 .sch-txt{fill:var(--encre-2);font-size:9.5px;font-family:inherit}
 .sch-txt-p{fill:var(--discret);font-size:9px;font-family:inherit}
@@ -1314,14 +1315,18 @@ function schCirculateur(cx, cy, r) {
       + ' L' + (cx + t) + ' ' + (cy + t) + ' Z"/>';
 }
 
-/* Puisage : une antenne piquée sur la canalisation, terminée par un robinet. Les points
-   pleins d'avant se confondaient avec le trait du circulateur dans la légende. */
-function schRobinet(x, y, dx, dy) {
-  const xe = x + dx, ye = y + dy;
+/* Puisage : une antenne piquée sur la canalisation, terminée par une icône de robinet.
+   L'icône vient de SVG Repo (faucet-droplet), fournie par l'utilisateur, inlinée ici : le
+   fichier reste autonome et ne charge rien de l'extérieur. Elle est en aplat, donc elle
+   prend la couleur du thème par fill. Son emprise utile est d'environ 48..450 en x et
+   0..512 en y dans un viewBox de 512, d'où le léger décalage appliqué pour que le bec
+   tombe à l'extrémité de l'antenne. */
+const SYMBOLE_ROBINET = '<symbol id="ico-robinet" viewBox="44 0 410 352"><path d="M292.48,153.6h-51.2v-64h30.49c9.003,7.868,20.634,12.8,33.51,12.8c28.228,0,51.2-22.972,51.2-51.2S333.508,0,305.28,0 c-12.868,0-24.499,4.932-33.51,12.8h-86.588C176.179,4.932,164.548,0,151.68,0c-28.228,0-51.2,22.972-51.2,51.2 s22.972,51.2,51.2,51.2c12.868,0,24.499-4.932,33.51-12.8h30.49v64h-128v-12.8c0-7.074-5.726-12.8-12.8-12.8 s-12.8,5.726-12.8,12.8v128c0,7.074,5.726,12.8,12.8,12.8s12.8-5.726,12.8-12.8V256h204.8c28.228,0,51.2,22.972,51.2,51.2V320 c0,14.14,11.46,25.6,25.6,25.6h51.2c14.14,0,25.6-11.46,25.6-25.6v-12.8C446.08,222.507,377.173,153.6,292.48,153.6z M305.28,25.6 c14.14,0,25.6,11.46,25.6,25.6c0,14.14-11.46,25.6-25.6,25.6s-25.6-11.46-25.6-25.6C279.68,37.06,291.14,25.6,305.28,25.6z M151.68,76.8c-14.14,0-25.6-11.46-25.6-25.6c0-14.14,11.46-25.6,25.6-25.6c14.14,0,25.6,11.46,25.6,25.6 C177.28,65.34,165.82,76.8,151.68,76.8z M202.88,64V38.4h51.2V64H202.88z M420.48,320h-51.2v-12.8c0-42.351-34.458-76.8-76.8-76.8 H87.68v-51.2h204.8c70.579,0,128,57.421,128,128V320z"/></symbol>';
+function schRobinet(x, y, dx, dy, taille) {
+  const t = taille || 15, xe = x + dx, ye = y + dy;
   return '<path class="sch-antenne" d="M' + x + ' ' + y + ' L' + xe + ' ' + ye + '"/>'
-    + '<path class="sch-robinet" d="M' + (xe - 3) + ' ' + ye + ' H' + (xe + 3)
-      + ' M' + xe + ' ' + ye + ' V' + (ye + 4)
-      + ' M' + xe + ' ' + (ye + 4) + ' L' + (xe + 3) + ' ' + (ye + 6.5) + '"/>';
+    + '<use class="sch-robinet" href="#ico-robinet" x="' + xe + '" y="' + (ye - t * 0.5)
+      + '" width="' + t + '" height="' + (t * 0.86) + '"/>';
 }
 // Robinets piqués sur une colonne (antenne horizontale) ou sur un tronçon horizontal (antenne verticale).
 function schRobinetsCol(xs, ys, dir) {
@@ -1499,7 +1504,7 @@ function schVignette(type) {
   if (type === "retour") return d + '<line class="sch-retour" x1="3" y1="8" x2="27" y2="8"/></svg>';
   if (type === "cordon") return d + '<line class="sch-aller" x1="3" y1="11" x2="27" y2="11"/><line class="sch-cordon" x1="3" y1="6" x2="27" y2="6"/></svg>';
   if (type === "pompe") return d + '<line class="sch-retour" x1="3" y1="8" x2="27" y2="8"/>' + schCirculateur(15, 8, 6) + "</svg>";
-  if (type === "robinet") return d + schRobinet(4, 5, 9, 0) + "</svg>";
+  if (type === "robinet") return d + schRobinet(2, 8, 8, 0, 16) + "</svg>";
   return d + "</svg>";
 }
 
@@ -1521,7 +1526,8 @@ function rendreSchema() {
     : (maintien === "tracage" ? [["aller", "distribution"], ["cordon", "cordon chauffant"], ["robinet", "puisage"]]
                               : [["aller", "distribution"], ["robinet", "puisage"]]);
 
-  zone.innerHTML = '<div class="sch-titre">' + ech(titre) + "</div>"
+  zone.innerHTML = '<svg class="sch-defs" aria-hidden="true"><defs>' + SYMBOLE_ROBINET + '</defs></svg>'
+    + '<div class="sch-titre">' + ech(titre) + "</div>"
     + '<svg viewBox="0 0 ' + SCH.w + " " + SCH.h + '" role="img" aria-label="Schéma de principe : ' + ech(titre) + '">'
     + schCadre()
     + schProduction(prod, boucle, boucle)
@@ -2220,6 +2226,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v10", date: "2026-08-29", titre: "Icône de robinet sur les puisages",
+    texte: "Les puisages du schéma portent l'icône de robinet fournie, recadrée sur le corps du robinet : la goutte, trop fine, devenait illisible à la taille du dessin. Icône inlinée, sans requête externe, aux couleurs du thème." },
   { v: "v9", date: "2026-08-29", titre: "Production et robinets sur le schéma",
     texte: "Le schéma montre aussi le mode de production retenu : échangeur seul en instantané, ballon d'autant plus haut que le mode accumule. Les puisages sont dessinés en antennes piquées terminées par un robinet, le circulateur en cercle fléché, et la légende reprend ces symboles au lieu de traits gris identiques." },
   { v: "v8", date: "2026-08-29", titre: "Alignement des champs de saisie",
@@ -2248,7 +2256,10 @@ const APP = {
   // ainsi clairement si l'on regarde la version publiée ou une version en cours.
   version: CHANGELOG[0].v,
   methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
-  icones: "Lucide, licence ISC"
+  icones: "Lucide (licence ISC) ; robinet du schéma : SVG Repo",
+  // Licence de l'icône de robinet à confirmer sur la fiche SVG Repo correspondante :
+  // le fichier fourni ne la mentionne pas, et SVG Repo héberge des licences variées.
+  iconeRobinet: "SVG Repo, faucet-droplet (licence à confirmer)"
 };
 
 /* Date de mise à jour : horodatage réel du fichier plutôt qu'une date recopiée à la main,
@@ -2362,6 +2373,7 @@ function renderStats() {
     ligneStat("Thème", document.documentElement.dataset.theme === "dark" ? "sombre" : "clair"),
     ligneStat("Scénarios enregistrés localement", ech(stockage)),
     ligneStat("Icônes", ech(APP.icones)),
+    ligneStat("Icône de robinet", ech(APP.iconeRobinet)),
     ligneStat("Données transmises", "aucune, tout le calcul est local")
   ]));
 
