@@ -2,6 +2,11 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (mise en ligne de la v23)
+
+- Fusion de `dev` dans `main` et publication : seize versions attendaient depuis la mise en ligne de la v7, toute la partie schémas de principe. Étiquette `v23` posée sur la fusion ; les versions intermédiaires ne sont pas étiquetées puisqu'aucune n'a jamais été publiée.
+- Reste ouvert, proposé et non retenu à ce stade : les cinq circuits du schéma se distinguent par la teinte et non par la luminance, si bien qu'un daltonien deutan confondra le rouge du primaire et l'olive du départ. Un jeu de tirets propre à chaque circuit lèverait la dépendance à la couleur.
+
 ## 2026-08-29 (v23 : raccordement du refoulement et couleur du secondaire)
 
 - L'utilisateur relit ses propres schémas et pointe ce qui sépare réellement le semi-instantané de la semi-accumulation : le raccordement du refoulement du secondaire. En semi-instantané il ne pénètre pas dans le ballon, il rejoint directement la sortie d'eau chaude sur laquelle le ballon est raccordé en dérivation ; l'échangeur produit en direct et le ballon n'est qu'un tampon sur le départ. En semi-accumulation le refoulement entre par le haut du ballon, et c'est du ballon que repart la distribution.
