@@ -2,6 +2,13 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v14 : lisibilité des schémas horizontaux)
+- Défaut signalé par l'utilisateur : sur les distributions horizontales, les icônes de robinet se superposaient au tracé du retour, qui passe juste sous l'aller.
+- Correction : les tronçons sont remontés dans chaque niveau et l'antenne de puisage passe de 7 à 20 px, de sorte que le robinet se pose franchement sous le retour. L'antenne le croise, ce qui est normal pour un piquage, mais l'icône ne recouvre plus rien. Le traçage garde une antenne courte, il n'a pas de retour à franchir.
+- Défaut trouvé en vérifiant : les trois légendes du bas se télescopaient, le libellé de technologie de production heurtant la légende d'architecture. Visible à l'oeil sur le traçage, et confirmé par un contrôle automatique des chevauchements de textes.
+- Chaque légende a désormais sa propre ligne, et l'interligne est passé à 13 px après mesure : la boîte de la police fait 12,1 px, si bien qu'à 12 px d'interligne le contrôle automatique signalait des chevauchements de boîtes sans chevauchement d'encre. Un test qu'il faut expliquer à chaque exécution n'est plus un test, d'où le choix d'un interligne qui le rend franchement vert.
+- Vérification : tous les croisements usage x production x maintien x architecture, avec contrôle qu'aucun texte n'en chevauche un autre et qu'aucun ne sort du cadre. Zéro dans les deux cas.
+
 ## 2026-08-29 (v13 : schéma de production fidèle)
 - Demande de l'utilisateur : rendre le schéma de production fiable, afficher le serpentin dans le ballon et détailler l'échangeur.
 - Point technique qui a guidé le travail : un ballon à échangeur incorporé et un échangeur à plaques externe sont deux technologies alternatives, pas cumulables. Les dessiner ensemble reviendrait à représenter un double échange. Le dessin doit donc choisir, et il choisit ce que l'outil annonce déjà par ailleurs.
