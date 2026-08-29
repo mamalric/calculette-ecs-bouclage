@@ -2,6 +2,14 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v19 : serpentin sur tous les ballons)
+- Demande de l'utilisateur : le serpentin doit être visible dans tous les ballons, toujours au même endroit en partie basse, et ne pas être raccordé à l'échangeur par le haut.
+- C'est appliqué. Le serpentin est tracé dès qu'il y a un ballon, à position fixe : bas calé à la même ordonnée quel que soit le mode, et hauteur constante sur trois passes. Ses deux extrémités sortent du ballon à la même abscisse.
+- L'échangeur rejoint ces deux extrémités par des liaisons qui restent basses. La boucle de charge qui remontait au sommet du ballon est supprimée : plus aucun raccordement n'atteint la partie haute, seule l'ECS y est puisée.
+- Cela revient sur ma position du tour précédent, où je soutenais qu'un échangeur externe et un serpentin ne pouvaient pas coexister sans double échange. Dans la configuration décrite par l'utilisateur, l'échangeur est l'interface côté générateur et le serpentin transfère à l'ECS dans le ballon : c'est une cascade avec boucle intermédiaire, pas un double échange sur le même fluide. Sa lecture est la bonne, et c'est un montage courant.
+- Le volume du ballon en semi-instantané passe de 28 à 34 px pour que le serpentin, dont la place est désormais fixe, y tienne sans toucher le trait de stratification.
+- Vérification ajoutée au banc : présence du serpentin dès qu'il y a un ballon, maintien dans les limites du ballon, centre de gravité dans la moitié basse, bas du serpentin à ordonnée constante d'un mode à l'autre, et aucun raccordement de charge au-dessus de la cote basse. Zéro écart.
+
 ## 2026-08-29 (v18 : échangeur au format portrait)
 - L'utilisateur propose un autre dessin d'échangeur et demande mon avis : format portrait, quatre piquages en ronds aux angles, corrugation en chevrons entre les deux rangées.
 - Avis rendu après essai plutôt que d'emblée, la question réelle étant la lisibilité à trente pixels. Le dessin est adopté : il est à la fois plus fidèle et plus lisible que le mien. Les quatre ronds aux angles forment une signature simple qui survit à la réduction, là où mes piquages décalés restaient ambigus une fois réduits.

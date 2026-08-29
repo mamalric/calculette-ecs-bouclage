@@ -1400,13 +1400,13 @@ function schEchangeur(x, y, w, h) {
 
 /* Serpentin d'un ballon à échangeur incorporé : un tracé en créneaux, plus lisible qu'une
    spirale à cette taille, avec ses deux piquages primaires sortant à gauche. */
-function schSerpentin(x, y, w, h, tours) {
-  const pas = h / tours;
-  let d = "M" + (x - 14) + " " + y + " H" + x;
+function schSerpentin(x, y, w, h, tours, xSortie) {
+  const pas = h / tours, xs = (xSortie === undefined) ? x - 14 : xSortie;
+  let d = "M" + xs + " " + y + " H" + x;
   for (let i = 0; i < tours; i++) {
     d += " h" + w + " v" + (pas / 2) + " h" + (-w) + " v" + (pas / 2);
   }
-  d += " H" + (x - 14);
+  d += " H" + xs;
   return '<path class="sch-serpentin" d="' + d + '"/>';
 }
 
@@ -1417,18 +1417,18 @@ function schSerpentin(x, y, w, h, tours) {
    ballon stratifié chargé par un échangeur externe (0,90). Les deux ne se cumulent pas, ce
    serait un double échange. */
 const PROD_SCHEMA = {
-  instantane:   { ballon: 0,  ech: true,  serpentin: false, charge: false,
+  instantane:   { ballon: 0,  ech: true,
                   libelle: "instantané", techno: "échangeur à plaques seul" },
-  semiInst:     { ballon: 28, ech: true,  serpentin: false, charge: true,
-                  libelle: "semi-instantané", techno: "échangeur externe, ballon stratifié" },
-  semiAccu:     { ballon: 46, ech: true,  serpentin: false, charge: true,
-                  libelle: "semi-accumulation", techno: "échangeur externe, ballon stratifié" },
-  accumulation: { ballon: 64, ech: false, serpentin: true,  charge: false,
+  semiInst:     { ballon: 34, ech: true,
+                  libelle: "semi-instantané", techno: "échangeur et ballon, faible volume" },
+  semiAccu:     { ballon: 46, ech: true,
+                  libelle: "semi-accumulation", techno: "échangeur et ballon à serpentin" },
+  accumulation: { ballon: 64, ech: false,
                   libelle: "accumulation", techno: "ballon de stockage à serpentin" },
-  permanente:   { ballon: 46, ech: true,  serpentin: false, charge: true,
-                  libelle: "échangeur + ballon", techno: "échangeur externe, charge permanente" },
-  arrets:       { ballon: 46, ech: true,  serpentin: false, charge: true,
-                  libelle: "échangeur + ballon", techno: "échangeur externe, charge intermittente" }
+  permanente:   { ballon: 46, ech: true,
+                  libelle: "échangeur + ballon", techno: "charge permanente" },
+  arrets:       { ballon: 46, ech: true,
+                  libelle: "échangeur + ballon", techno: "charge intermittente" }
 };
 function modeProduction(sc) {
   if (sc.usage === "logement") {
@@ -1444,6 +1444,10 @@ function schProduction(modeProd, avecPompe, avecRetour) {
   const basB = 178, xb = 46, wb = 26;
   const xe = 5, ye = 132, we = 28, he = 46;      // échangeur à plaques, format portrait
   const P = schEchPorts(xe, ye, we, he);
+  /* Le serpentin occupe toujours la même place, en partie basse du ballon : c'est là qu'il
+     réchauffe l'eau la plus froide sans brasser la stratification. Ses deux raccordements
+     restent bas, l'échangeur ne rejoint jamais le haut du ballon. */
+  const serpHaut = basB - 28, serpBas = basB - 4, xSerp = 38;
   let o = "";
 
   if (cfg.ballon > 0) {
@@ -1451,29 +1455,21 @@ function schProduction(modeProd, avecPompe, avecRetour) {
     o += '<rect class="sch-prod" x="' + xb + '" y="' + hautB + '" width="' + wb + '" height="' + cfg.ballon + '" rx="8"/>';
     // Trait de stratification : l'eau chaude occupe le haut du ballon.
     o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 9) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 9) + '"/>';
-    if (cfg.serpentin) {
-      /* Serpentin cantonné au tiers bas du ballon, là où il réchauffe l'eau la plus froide.
-         C'est ce qui permet de garder une efficacité de stockage élevée : un serpentin qui
-         occuperait toute la hauteur brasserait le ballon et ruinerait la stratification,
-         cas des 0,5 à 0,8 donnés par Energie+ pour un ballon à échangeur incorporé. */
-      const tours = 3, hs = tours * 8;
-      o += schSerpentin(xb + 6, basB - hs - 6, wb - 12, hs, tours);
-    }
-    const ySortie = hautB + 4;
-    o += '<path class="sch-aller" d="M' + (xb + wb) + ' ' + ySortie + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
+    o += schSerpentin(xb + 6, serpHaut, wb - 12, serpBas - serpHaut, 3, xSerp);
+    // ECS puisée en haut du ballon, retour de bouclage repris en pied.
+    o += '<path class="sch-aller" d="M' + (xb + wb) + ' ' + (hautB + 4) + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
     if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xb + wb) + ' V' + (basB - 6) + '"/>';
   }
 
   if (cfg.ech) {
     o += schEchangeur(xe, ye, we, he);
-    if (cfg.ballon > 0 && cfg.charge) {
-      // Boucle de charge : le ballon se vide par le bas vers l'échangeur et se remplit par
-      // le haut. C'est ce circuit, et non un serpentin, qui chauffe un ballon stratifié.
-      const hautB = basB - cfg.ballon;
-      // Sortie chaude en haut vers le haut du ballon, reprise froide en bas vers son pied.
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' H' + (xb - 3) + ' V' + (hautB + 4) + ' H' + xb + '"/>';
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pBas + ' H' + (xb - 6) + ' V' + (basB - 5) + ' H' + xb + '"/>';
-    } else if (cfg.ballon === 0) {
+    if (cfg.ballon > 0) {
+      // Les deux piquages de droite rejoignent les deux extrémités du serpentin, toutes deux
+      // en partie basse : aucun raccordement ne monte au sommet du ballon.
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' V' + serpHaut + ' H' + xSerp + '"/>';
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pBas + ' V' + serpBas + ' H' + xSerp + '"/>';
+    } else {
+      // Instantané : pas de ballon, l'échangeur alimente directement la distribution.
       o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
       if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 5) + ' V' + P.pBas + '"/>';
     }
@@ -2325,6 +2321,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v19", date: "2026-08-29", titre: "Serpentin sur tous les ballons",
+    texte: "Le serpentin est désormais visible dans tous les ballons, toujours à la même place en partie basse. L'échangeur le rejoint par ses deux extrémités basses : plus aucun raccordement ne monte au sommet du ballon." },
   { v: "v18", date: "2026-08-29", titre: "Échangeur au format portrait",
     texte: "L'échangeur adopte la vue de face d'une plaque de serrage : format portrait et quatre piquages aux angles. Les piquages redeviennent symétriques, ce qui est correct : sur un échangeur, c'est la circulation qui est diagonale, pas la position des piquages." },
   { v: "v17", date: "2026-08-29", titre: "Semi-accumulation : son échangeur rétabli",
