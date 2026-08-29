@@ -155,7 +155,7 @@ COSTIC ne publie pas d'abaques volume/puissance par mode hors habitat : la méth
 |---|---|---|---|
 | Instantané | aucun stockage, P = E_pointe / tp | sans objet (0,90 affiché) | sans objet |
 | Semi-instantané | stock couvrant 25 % de l'énergie de pointe | 0,90 (ballon stratifié sur échangeur externe, [S2] 0,80-0,95) | 4 h |
-| Semi-accumulation | volume au palier de puissance | 0,75 (ballon à échangeur incorporé, Energie+ 0,5-0,8) | 4 h |
+| Semi-accumulation | volume au palier de puissance | 0,85 (ballon stratifié chargé par un échangeur externe, [S2] 0,80-0,95) | 4 h |
 | Accumulation | stock couvrant le besoin journalier | 0,90 (ballon de stockage stratifié, [S2]) | fenêtre par usage, voir ci-dessous |
 
 Les cibles de 25 % pour le semi-instantané et le choix d'associer une technologie à chaque mode sont des conventions de l'outil, pas des valeurs publiées : elles positionnent des points de repère sur une courbe qui, elle, est calculée. L'efficacité reste modifiable pour coller au matériel réel.

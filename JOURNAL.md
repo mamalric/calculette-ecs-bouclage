@@ -2,6 +2,14 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v17 : semi-accumulation, son échangeur rétabli)
+- Question de l'utilisateur : la semi-accumulation n'a pas d'échangeur ? Vérification faite, il a raison de s'en étonner, et c'est une incohérence que j'avais introduite.
+- Le mode s'intitule dans l'outil "Semi-accumulation (échangeur + ballon)", et c'est bien ce qu'il désigne en ECS collective : un échangeur à plaques externe chargeant un ballon de stockage. Je l'avais pourtant dessiné avec un serpentin et sans échangeur, en me calant sur son efficacité de stockage par défaut plutôt que sur son intitulé.
+- Le dessin est corrigé : échangeur à plaques, boucle de charge et ballon stratifié, comme le semi-instantané mais avec un ballon plus grand.
+- Conséquence assumée sur le calcul : l'efficacité par défaut de ce mode était de 0,75, justifiée par un ballon à échangeur incorporé, technologie que ce mode n'emploie pas. Pour un ballon stratifié chargé par un échangeur externe, [S2] donne 0,80 à 0,95. La valeur passe donc à 0,85, milieu de fourchette. Un 0,75 sans source pour la technologie représentée aurait contrevenu à la règle du projet.
+- Impact chiffré, mesuré sur un hôtel de 70 chambres à 80 pour cent d'occupation : volume visé de 2 236 à 1 973 litres, soit environ 12 pour cent de moins, et un ballon retenu qui passe de 2 500 à 2 000 litres. La puissance ne bouge pas, elle est fixée par le palier de recharge.
+- L'accumulation garde son serpentin, et ce n'est pas contradictoire avec son efficacité de 0,90 : le serpentin y est cantonné au tiers bas du ballon, là où il ne brasse pas la stratification. C'est un serpentin occupant toute la hauteur qui ferait tomber l'efficacité dans la fourchette 0,5-0,8 d'Energie+. Le dessin a été resserré pour que cette distinction se voie, et le contrôle automatique de cohérence entre technologie dessinée et efficacité annoncée a été affiné en conséquence.
+
 ## 2026-08-29 (v16 : alignement des cases, lisibilité de l'échangeur)
 - Case à cocher : elle se plaçait au niveau des intitulés voisins et non de leurs champs, faute d'intitulé au-dessus d'elle. Elle reçoit désormais la hauteur d'un intitulé plus l'espacement, et se cale sur la hauteur d'un champ, mesurée à 37 px.
 - Deux pièges rencontrés en chemin, tous deux révélés par la mesure et non par l'oeil. D'abord un `2.7em` écrit dans le conteneur se calculait sur ses 14 px hérités au lieu des 12 px de l'intitulé, d'où 5 px de décalage : la valeur est maintenant multipliée explicitement par 12 px. Ensuite la case se centrait sur l'ensemble de son intitulé, si bien qu'un intitulé replié sur deux lignes la faisait descendre de 12 px ; elle se cale désormais sur sa première ligne.

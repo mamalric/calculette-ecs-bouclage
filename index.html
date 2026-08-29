@@ -819,8 +819,8 @@ const MODES_TERT = {
     aide: "Aucun stockage : toute la pointe passe par l'échangeur. Déconseillé par le guide COSTIC (puissance élevée, cycles courts, faibles taux de charge)." },
   semiInst: { label: "Semi-instantané (échangeur + petit ballon)", R: 0.9,
     aide: "Petit ballon écrêtant la pointe, chargé en continu par un échangeur externe. Efficacité 0,90 par défaut (ballon bien stratifié, [S2] 0,80-0,95)." },
-  semiAccu: { label: "Semi-accumulation (échangeur + ballon)", R: 0.75,
-    aide: "Ballon dimensionné sur la pointe. Efficacité 0,75 par défaut (ballon à échangeur incorporé, Energie+ 0,5-0,8) : passer à 0,90 si échangeur externe et ballon stratifié." },
+  semiAccu: { label: "Semi-accumulation (échangeur + ballon)", R: 0.85,
+    aide: "Ballon dimensionné sur la pointe, chargé par un échangeur externe comme l'indique le nom du mode. Efficacité 0,85 par défaut, milieu de la fourchette 0,80-0,95 donnée par [S2] pour un ballon stratifié chargé de cette façon. Descendre vers 0,5-0,8 (Energie+) si le ballon a au contraire un échangeur incorporé." },
   accumulation: { label: "Accumulation (stock de la journée, recharge hors pointe)", R: 0.9,
     aide: "Le stockage couvre le besoin journalier, reconstitué pendant la seule fenêtre de recharge. Efficacité 0,90 par défaut (ballon de stockage stratifié, [S2])." }
 };
@@ -1425,8 +1425,8 @@ const PROD_SCHEMA = {
                   libelle: "instantané", techno: "échangeur à plaques seul" },
   semiInst:     { ballon: 28, ech: true,  serpentin: false, charge: true,
                   libelle: "semi-instantané", techno: "échangeur externe, ballon stratifié" },
-  semiAccu:     { ballon: 46, ech: false, serpentin: true,  charge: false,
-                  libelle: "semi-accumulation", techno: "ballon à échangeur incorporé" },
+  semiAccu:     { ballon: 46, ech: true,  serpentin: false, charge: true,
+                  libelle: "semi-accumulation", techno: "échangeur externe, ballon stratifié" },
   accumulation: { ballon: 64, ech: false, serpentin: true,  charge: false,
                   libelle: "accumulation", techno: "ballon de stockage à serpentin" },
   permanente:   { ballon: 46, ech: true,  serpentin: false, charge: true,
@@ -1456,8 +1456,11 @@ function schProduction(modeProd, avecPompe, avecRetour) {
     // Trait de stratification : l'eau chaude occupe le haut du ballon.
     o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 9) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 9) + '"/>';
     if (cfg.serpentin) {
-      // Serpentin en partie basse, là où il réchauffe l'eau la plus froide.
-      const tours = cfg.ballon > 55 ? 4 : 3, hs = tours * 8;
+      /* Serpentin cantonné au tiers bas du ballon, là où il réchauffe l'eau la plus froide.
+         C'est ce qui permet de garder une efficacité de stockage élevée : un serpentin qui
+         occuperait toute la hauteur brasserait le ballon et ruinerait la stratification,
+         cas des 0,5 à 0,8 donnés par Energie+ pour un ballon à échangeur incorporé. */
+      const tours = 3, hs = tours * 8;
       o += schSerpentin(xb + 6, basB - hs - 6, wb - 12, hs, tours);
     }
     const ySortie = hautB + 4;
@@ -2326,6 +2329,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v17", date: "2026-08-29", titre: "Semi-accumulation : son échangeur rétabli",
+    texte: "Le mode s'appelle \"échangeur + ballon\" mais était dessiné sans échangeur. Il retrouve son échangeur externe et sa boucle de charge. Conséquence sur le calcul : son efficacité de stockage passe de 0,75 à 0,85, valeur sourcée pour un ballon stratifié chargé de cette façon, ce qui réduit le volume visé d'environ 12 %." },
   { v: "v16", date: "2026-08-29", titre: "Alignement des cases et lisibilité de l'échangeur",
     texte: "Les cases à cocher s'alignent sur les champs de leur rangée et non sur les intitulés. L'échangeur est élargi pour que ses chevrons ne passent plus sur ses piquages." },
   { v: "v15", date: "2026-08-29", titre: "Échangeur : piquages corrigés",
