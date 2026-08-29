@@ -283,7 +283,7 @@ button.reset{
 .sch-prod{fill:var(--papier);stroke:var(--encre-2);stroke-width:1.5}
 .sch-ech{fill:none;stroke:var(--encre-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .sch-ech-chev{fill:none;stroke:var(--encre-2);stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
-.sch-tirant{fill:none;stroke:var(--encre-2);stroke-width:1.1;opacity:.8}
+.sch-port{fill:var(--papier);stroke:var(--encre-2);stroke-width:1.3}
 .sch-serpentin{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .sch-charge{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:2}
@@ -1357,26 +1357,32 @@ function schRobinetsHoriz(xs, ys, dy) {
    de corrugation et quatre piquages, deux par circuit. Les chevrons sont volontairement peu
    nombreux (trois) et légèrement plus pâles que le corps : à la taille du schéma, en mettre
    davantage donnerait un aplat gris illisible. */
+/* Positions des quatre piquages d'un échangeur à plaques. Ils ne sont pas symétriques :
+   le circuit primaire entre en haut d'un côté et ressort en bas, le secondaire fait
+   l'inverse de l'autre côté, si bien que les deux entrées sont diagonalement opposées.
+   C'est la circulation à contre-courant, qui est le principe même de l'échangeur. */
+function schEchPorts(x, y, w, h) {
+  return { pg1: y + 6, pg2: y + h - 6, pd1: y + 11, pd2: y + h - 11,
+           xg: x + 5, xd: x + w - 5 };
+}
 function schEchangeur(x, y, w, h) {
-  const cx = x + w / 2, hp1 = y + 7, hp2 = y + h - 7;
+  const cx = x + w / 2, P = schEchPorts(x, y, w, h);
   let o = '<rect class="sch-prod" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="4"/>';
-  // Plaque de serrage fixe, côté bâti.
-  o += '<line class="sch-tirant" x1="' + (x + 4.5) + '" y1="' + (y + 3) + '" x2="' + (x + 4.5) + '" y2="' + (y + h - 3) + '"/>';
   // Corrugation en chevrons. Quatre suffisent : au-delà, à cette taille, le motif se referme
   // en aplat gris et ne se lit plus.
-  const n = 4, haut = y + 8, pas = (h - 14) / (n - 1);
+  const n = 4, haut = y + 10, pas = (h - 18) / (n - 1);
   for (let i = 0; i < n; i++) {
     const yc = haut + i * pas;
-    o += '<path class="sch-ech-chev" d="M' + (x + 7) + ' ' + yc + ' L' + cx + ' ' + (yc - 4) + ' L' + (x + w - 3) + ' ' + yc + '"/>';
+    o += '<path class="sch-ech-chev" d="M' + (x + 4) + ' ' + yc + ' L' + cx + ' ' + (yc - 4) + ' L' + (x + w - 4) + ' ' + yc + '"/>';
   }
-  // Tirants de serrage, côté plaque mobile.
-  o += '<circle class="sch-tirant" cx="' + (x + w - 4) + '" cy="' + (y + 4) + '" r="1.4"/>'
-    + '<circle class="sch-tirant" cx="' + (x + w - 4) + '" cy="' + (y + h - 4) + '" r="1.4"/>';
-  // Quatre piquages : primaire à gauche, ECS à droite, avec leur bride.
-  o += '<path class="sch-ech" d="M' + x + ' ' + hp1 + ' h-5 M' + (x - 5) + ' ' + (hp1 - 2.5) + ' v5'
-    + ' M' + x + ' ' + hp2 + ' h-5 M' + (x - 5) + ' ' + (hp2 - 2.5) + ' v5'
-    + ' M' + (x + w) + ' ' + hp1 + ' h5 M' + (x + w + 5) + ' ' + (hp1 - 2.5) + ' v5'
-    + ' M' + (x + w) + ' ' + hp2 + ' h5 M' + (x + w + 5) + ' ' + (hp2 - 2.5) + ' v5"/>';
+  // Les quatre piquages, dessinés comme des ronds : c'est par eux qu'entrent et sortent le
+  // primaire, à gauche, et le secondaire, à droite.
+  o += '<path class="sch-ech" d="M' + x + ' ' + P.pg1 + ' h-5 M' + x + ' ' + P.pg2 + ' h-5'
+    + ' M' + (x + w) + ' ' + P.pd1 + ' h5 M' + (x + w) + ' ' + P.pd2 + ' h5"/>';
+  o += '<circle class="sch-port" cx="' + P.xg + '" cy="' + P.pg1 + '" r="2.6"/>'
+    + '<circle class="sch-port" cx="' + P.xg + '" cy="' + P.pg2 + '" r="2.6"/>'
+    + '<circle class="sch-port" cx="' + P.xd + '" cy="' + P.pd1 + '" r="2.6"/>'
+    + '<circle class="sch-port" cx="' + P.xd + '" cy="' + P.pd2 + '" r="2.6"/>';
   return o;
 }
 
@@ -1425,7 +1431,7 @@ function schProduction(modeProd, avecPompe, avecRetour) {
   const cfg = PROD_SCHEMA[modeProd] || PROD_SCHEMA.semiAccu;
   const basB = 178, xb = 42, wb = 28;
   const xe = 6, ye = 140, we = 22, he = 34;      // échangeur à plaques
-  const hp1 = ye + 7, hp2 = ye + he - 7;
+  const P = schEchPorts(xe, ye, we, he);
   let o = "";
 
   if (cfg.ballon > 0) {
@@ -1449,11 +1455,12 @@ function schProduction(modeProd, avecPompe, avecRetour) {
       // Boucle de charge : le ballon se vide par le bas vers l'échangeur et se remplit par
       // le haut. C'est ce circuit, et non un serpentin, qui chauffe un ballon stratifié.
       const hautB = basB - cfg.ballon;
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + hp1 + ' H' + (xb - 3) + ' V' + (hautB + 4) + ' H' + xb + '"/>';
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + hp2 + ' H' + (xb - 6) + ' V' + (basB - 5) + ' H' + xb + '"/>';
+      // Sortie chaude en haut vers le haut du ballon, reprise froide en bas vers son pied.
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pd1 + ' H' + (xb - 3) + ' V' + (hautB + 4) + ' H' + xb + '"/>';
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pd2 + ' H' + (xb - 6) + ' V' + (basB - 5) + ' H' + xb + '"/>';
     } else if (cfg.ballon === 0) {
-      o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + hp1 + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
-      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 5) + ' V' + hp2 + '"/>';
+      o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + P.pd1 + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
+      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 5) + ' V' + P.pd2 + '"/>';
     }
   }
 
@@ -2303,6 +2310,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v15", date: "2026-08-29", titre: "Échangeur : piquages corrigés",
+    texte: "Les quatre ronds de l'échangeur sont les piquages des circuits primaire et secondaire, décalés et non symétriques, le primaire entrant en haut d'un côté et ressortant en bas quand le secondaire fait l'inverse. Le trait vertical superflu, pris à tort pour une plaque de serrage, est supprimé." },
   { v: "v14", date: "2026-08-29", titre: "Lisibilité des schémas horizontaux",
     texte: "Sur les distributions horizontales, les robinets chevauchaient le tracé du retour. Les tronçons sont remontés dans chaque niveau et les antennes de puisage allongées pour passer sous le retour. Les trois lignes de légende ont chacune la leur." },
   { v: "v13", date: "2026-08-29", titre: "Schéma de production fidèle",

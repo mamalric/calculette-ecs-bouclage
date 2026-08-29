@@ -2,6 +2,14 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v15 : échangeur, piquages corrigés)
+- Trois corrections signalées par l'utilisateur sur le symbole d'échangeur, toutes fondées.
+- J'avais mal lu l'image de référence : les deux ronds y sont les piquages des circuits, et je les avais pris pour des tirants de serrage. Ils deviennent donc les quatre piquages réels, dessinés en ronds, et ce sont eux que raccordent les canalisations.
+- Le trait vertical que j'avais ajouté comme plaque de serrage fixe était superflu : supprimé.
+- Les piquages ne sont plus symétriques. Ceux de gauche sont aux extrémités, ceux de droite décalés vers l'intérieur, et surtout le primaire entre en haut d'un côté pour ressortir en bas pendant que le secondaire fait l'inverse : les deux entrées sont diagonalement opposées, ce qui est la circulation à contre-courant, principe même de l'échangeur.
+- Conséquence sur le raccordement : la boucle de charge part maintenant du piquage haut de droite vers le haut du ballon, et revient du pied du ballon vers le piquage bas. Le sens des fluides est donc juste, pas seulement l'allure du symbole.
+- Vérification : tous les croisements usage x production x maintien x architecture, avec contrôle que l'échangeur porte exactement quatre piquages quand il est présent et aucun quand il ne l'est pas, qu'aucun texte n'en chevauche un autre et que rien ne sort du cadre.
+
 ## 2026-08-29 (v14 : lisibilité des schémas horizontaux)
 - Défaut signalé par l'utilisateur : sur les distributions horizontales, les icônes de robinet se superposaient au tracé du retour, qui passe juste sous l'aller.
 - Correction : les tronçons sont remontés dans chaque niveau et l'antenne de puisage passe de 7 à 20 px, de sorte que le robinet se pose franchement sous le retour. L'antenne le croise, ce qui est normal pour un piquage, mais l'icône ne recouvre plus rien. Le traçage garde une antenne courte, il n'a pas de retour à franchir.
