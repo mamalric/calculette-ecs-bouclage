@@ -2,6 +2,17 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v24 : enregistrer et ouvrir un projet)
+
+- L'utilisateur signale une fonctionnalité demandée au départ et jamais faite : sauvegarder un projet en JSON. Vérification faite, il a raison, elle figurait en piste dans la fiche et rien n'existait ; tout ne vivait que dans le localStorage, qui ne survit ni au changement de poste, ni au nettoyage du navigateur, ni au passage du dossier à un collègue.
+- Deux boutons ajoutés dans l'en-tête : "Enregistrer" produit un fichier JSON contenant tous les scénarios, "Ouvrir" le relit. Le nom du fichier reprend celui du projet, désaccentué et assaini, suivi de la date.
+- Le fichier porte son format et son numéro de version. C'est ce qui permet de refuser un JSON étranger avec un motif lisible plutôt que d'écraser le travail en cours par des données inexploitables, et de refuser aussi un fichier produit par une version future.
+- Ce qui est relu est normalisé et non recopié tel quel : seuls le nom, l'usage et les saisies de type simple sont conservés, un usage inconnu invalide le scénario, et les clés qui toucheraient au prototype sont écartées. Un fichier retouché à la main ne doit pas faire tomber l'interface au premier rendu.
+- L'ouverture remplace, c'est ce qu'on attend d'un fichier de projet, mais elle demande confirmation en annonçant combien de scénarios seront remplacés et combien du fichier seront ignorés.
+- L'en-tête regroupe désormais ses actions dans un conteneur : avec deux boutons de plus, l'espace extensible qui les précède absorbait la fin de la première ligne et n'y laissait qu'un bouton.
+- Vérification dans le navigateur, 26 contrôles : refus motivé de chaque forme de fichier douteux, normalisation des saisies, prototype intact, nom de fichier assaini, aller-retour complet sur un projet à deux scénarios et deux usages avec comparaison des résultats calculés avant et après, et surtout maintien de l'état en cours sur chacun des chemins de refus, confirmation annulée comprise. Zéro écart.
+- Le téléchargement lui-même n'a pas pu être observé de bout en bout : le bac à sable sert la page depuis une URL data, où le localStorage est désactivé et où l'enregistrement de fichier n'aboutit pas. L'ancre construite et le contenu du blob ont été relus par interception du clic, mais le déclenchement réel reste à confirmer par l'utilisateur.
+
 ## 2026-08-29 (mise en ligne de la v23)
 
 - Fusion de `dev` dans `main` et publication : seize versions attendaient depuis la mise en ligne de la v7, toute la partie schémas de principe. Étiquette `v23` posée sur la fusion ; les versions intermédiaires ne sont pas étiquetées puisqu'aucune n'a jamais été publiée.
