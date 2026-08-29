@@ -2,6 +2,13 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v12 : sens des robinets)
+- Défaut signalé par l'utilisateur : sur les colonnes, les robinets étaient à l'envers. L'icône a son entrée d'eau à gauche et son bec à droite ; posée telle quelle au bout d'une antenne partant vers la gauche, son bec pointait vers la colonne et le robinet semblait alimenter le réseau au lieu d'en être alimenté.
+- Correction : l'icône est retournée horizontalement quand le piquage part vers la gauche, par une transformation `scale(-1 1)` autour du point de raccordement. L'entrée reste ainsi toujours côté canalisation et le bec toujours vers l'extérieur.
+- Le cas des colonnes en U inversé valide la correction : il mélange les deux sens, six robinets retournés sur les douze du dessin, chacun orienté selon le côté où part son antenne.
+- Les architectures horizontales ne sont pas concernées, leur antenne descend depuis le tronçon et l'orientation naturelle convient.
+- Vérification : tous les croisements usage x production x maintien x architecture, avec contrôle que chaque robinet porte une orientation explicite et reste dans le cadre.
+
 ## 2026-08-29 (v11 : échangeur à plaques sur le schéma)
 - L'utilisateur a transmis une image d'échangeur à plaques comme inspiration pour le symbole de production. L'image portait un filigrane commercial : elle n'a pas été reprise, le symbole est dessiné à partir de zéro dans le même esprit.
 - Le symbole comporte un corps arrondi, trois chevrons de corrugation et quatre piquages, deux à gauche pour le primaire et deux à droite pour l'ECS. Il remplace le rectangle traversé de trois traits, qui ne disait rien de la technologie.

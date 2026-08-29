@@ -1324,10 +1324,15 @@ function schCirculateur(cx, cy, r) {
    tombe à l'extrémité de l'antenne. */
 const SYMBOLE_ROBINET = '<symbol id="ico-robinet" viewBox="44 0 410 352"><path d="M292.48,153.6h-51.2v-64h30.49c9.003,7.868,20.634,12.8,33.51,12.8c28.228,0,51.2-22.972,51.2-51.2S333.508,0,305.28,0 c-12.868,0-24.499,4.932-33.51,12.8h-86.588C176.179,4.932,164.548,0,151.68,0c-28.228,0-51.2,22.972-51.2,51.2 s22.972,51.2,51.2,51.2c12.868,0,24.499-4.932,33.51-12.8h30.49v64h-128v-12.8c0-7.074-5.726-12.8-12.8-12.8 s-12.8,5.726-12.8,12.8v128c0,7.074,5.726,12.8,12.8,12.8s12.8-5.726,12.8-12.8V256h204.8c28.228,0,51.2,22.972,51.2,51.2V320 c0,14.14,11.46,25.6,25.6,25.6h51.2c14.14,0,25.6-11.46,25.6-25.6v-12.8C446.08,222.507,377.173,153.6,292.48,153.6z M305.28,25.6 c14.14,0,25.6,11.46,25.6,25.6c0,14.14-11.46,25.6-25.6,25.6s-25.6-11.46-25.6-25.6C279.68,37.06,291.14,25.6,305.28,25.6z M151.68,76.8c-14.14,0-25.6-11.46-25.6-25.6c0-14.14,11.46-25.6,25.6-25.6c14.14,0,25.6,11.46,25.6,25.6 C177.28,65.34,165.82,76.8,151.68,76.8z M202.88,64V38.4h51.2V64H202.88z M420.48,320h-51.2v-12.8c0-42.351-34.458-76.8-76.8-76.8 H87.68v-51.2h204.8c70.579,0,128,57.421,128,128V320z"/></symbol>';
 function schRobinet(x, y, dx, dy, taille) {
-  const t = taille || 15, xe = x + dx, ye = y + dy;
+  const t = taille || 15, h = t * 0.86, xe = x + dx, ye = y + dy;
+  // L'icône a son entrée d'eau à gauche et son bec à droite. Sur un piquage vers la gauche
+  // il faut donc la retourner, sans quoi le bec pointe vers la canalisation et le robinet
+  // semble l'alimenter au lieu d'en être alimenté.
+  const sens = (dx < 0) ? -1 : 1;
   return '<path class="sch-antenne" d="M' + x + ' ' + y + ' L' + xe + ' ' + ye + '"/>'
-    + '<use class="sch-robinet" href="#ico-robinet" x="' + xe + '" y="' + (ye - t * 0.5)
-      + '" width="' + t + '" height="' + (t * 0.86) + '"/>';
+    + '<g transform="translate(' + xe + ' ' + (ye - h / 2) + ') scale(' + sens + ' 1)">'
+    + '<use class="sch-robinet" href="#ico-robinet" x="0" y="0" width="' + t + '" height="' + h + '"/>'
+    + '</g>';
 }
 // Robinets piqués sur une colonne (antenne horizontale) ou sur un tronçon horizontal (antenne verticale).
 function schRobinetsCol(xs, ys, dir) {
@@ -2246,6 +2251,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v12", date: "2026-08-29", titre: "Sens des robinets",
+    texte: "Les robinets piqués vers la gauche sont retournés : leur entrée d'eau est côté canalisation et leur bec pointe vers l'extérieur. Ils semblaient auparavant alimenter le réseau au lieu d'en être alimentés." },
   { v: "v11", date: "2026-08-29", titre: "Échangeur à plaques sur le schéma",
     texte: "L'échangeur du schéma prend la forme d'un échangeur à plaques : corps arrondi, chevrons de corrugation et quatre piquages, deux par circuit. Il remplace le rectangle rayé qui ne disait rien de la technologie." },
   { v: "v10", date: "2026-08-29", titre: "Icône de robinet sur les puisages",
