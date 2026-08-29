@@ -247,6 +247,32 @@ button.reset{
   background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312180a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
 }
 
+/* ---- schéma de principe du réseau */
+.schema{
+  margin-top:14px;padding:12px 14px;border:1px solid var(--ligne);border-radius:var(--rayon);
+  background:var(--papier-2);
+}
+.schema svg{display:block;width:100%;height:auto;max-width:420px;margin:0 auto}
+.schema .sch-legende{
+  display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;
+  margin-top:10px;font-size:11.5px;color:var(--discret);
+}
+.schema .sch-legende span{display:inline-flex;align-items:center;gap:5px}
+.schema .sch-legende i{display:inline-block;width:16px;height:0;border-top-width:2.5px;border-top-style:solid}
+.schema .sch-titre{font-size:12px;font-weight:600;color:var(--encre-2);text-align:center;margin-bottom:8px}
+.schema .sch-note{font-size:11px;color:var(--discret);text-align:center;margin-top:8px;line-height:1.45}
+/* Le SVG hérite des couleurs du thème : rien n'est codé en dur. */
+.sch-bat{fill:none;stroke:var(--ligne);stroke-width:1.5}
+.sch-sol{stroke:var(--discret);stroke-width:1.5;stroke-dasharray:3 3}
+.sch-aller{fill:none;stroke:var(--primaire);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.sch-retour{fill:none;stroke:var(--moyenne);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:6 4}
+.sch-cordon{fill:none;stroke:var(--haute);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:2 3}
+.sch-prod{fill:var(--papier);stroke:var(--encre-2);stroke-width:1.5}
+.sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:1.6}
+.sch-pt{fill:var(--encre-2)}
+.sch-txt{fill:var(--encre-2);font-size:9.5px;font-family:inherit}
+.sch-txt-p{fill:var(--discret);font-size:9px;font-family:inherit}
+
 /* ---- bandeaux d'information et d'alerte */
 .live{
   display:flex;align-items:flex-start;gap:9px;
@@ -358,6 +384,7 @@ footer.pied{
   header{position:static;border-bottom:1px solid var(--ligne)}
   .tabs,.noprint,.bouton-icone,button.reset,.hint{display:none !important}
   .modale,#popAide,.btn-aide{display:none !important}
+  .schema{break-inside:avoid}
   .wrap{padding:0 6px}
   main.cols{display:block}
   #colResultats{position:static;max-height:none;overflow:visible}
@@ -434,6 +461,7 @@ footer.pied{
         <h2 data-ico="boucle">Maintien en température</h2>
         <div class="body">
           <div class="grid" id="zoneBouclage"></div>
+          <div class="schema" id="zoneSchema"></div>
           <div class="notice">Le couple aller plus retour n'existe que pour un réseau bouclé. Le traçage électrique n'a qu'un aller, et une distribution courte peut se passer de maintien : les champs sans objet disparaissent selon le mode retenu.</div>
         </div>
       </div>
@@ -1246,6 +1274,172 @@ function valeursScenario(scenario) {
 }
 
 /* ================================================================
+   SECTION 3 bis - SCHEMAS DE PRINCIPE
+   Vues de coupe d'un bâtiment R+2, destinées à rendre visible ce que change
+   l'architecture retenue. Ce sont des schémas de principe, pas des plans : ils
+   illustrent les descriptions de [B1] fig. 15, sans respecter d'échelle.
+   ================================================================ */
+const SCH = { w: 340, h: 200, hautMur: 26, bas: 152, collA: 164, collR: 178 };
+
+function schCadre() {
+  return '<rect class="sch-bat" x="72" y="18" width="246" height="140" rx="3"/>'
+    + '<line class="sch-bat" x1="72" y1="65" x2="318" y2="65"/>'
+    + '<line class="sch-bat" x1="72" y1="111" x2="318" y2="111"/>'
+    + '<line class="sch-sol" x1="8" y1="158" x2="332" y2="158"/>';
+}
+function schProduction(avecPompe) {
+  return '<rect class="sch-prod" x="14" y="132" width="42" height="34" rx="4"/>'
+    + '<line class="sch-prod" x1="14" y1="141" x2="56" y2="141"/>'
+    + '<text class="sch-txt" x="35" y="156" text-anchor="middle">ECS</text>'
+    + (avecPompe ? '<circle class="sch-pompe" cx="66" cy="' + SCH.collR + '" r="6"/>' : '');
+}
+// Points de puisage : de petits points sur les niveaux desservis.
+function schPuisages(xs, ys) {
+  let o = "";
+  for (const x of xs) for (const y of ys) o += '<circle class="sch-pt" cx="' + x + '" cy="' + y + '" r="2.4"/>';
+  return o;
+}
+function schEtiquette(x, y, t, ancre) {
+  return '<text class="sch-txt-p" x="' + x + '" y="' + y + '" text-anchor="' + (ancre || "middle") + '">' + t + "</text>";
+}
+
+/* Chaque architecture décrit le trajet réel de l'eau : l'aller part de la production,
+   dessert les puisages, et le retour ramène l'eau vers elle. */
+const SCHEMAS_ARCHI = {
+  colonnes: () => {
+    const cols = [120, 195, 270];
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 296';
+    for (const x of cols) o += ' M' + x + ' ' + SCH.collA + ' V 34';
+    o += '"/>';
+    o += '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308';
+    for (const x of cols) o += ' M' + x + ' 34 H ' + (x + 14) + ' V ' + SCH.collR;
+    o += '"/>';
+    return o + schPuisages(cols, [46, 92, 138]) + schEtiquette(195, 194, "1 boucle par colonne");
+  },
+  horizontale: () => {
+    const niv = [44, 90, 136];
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 44';
+    for (const y of niv) o += ' M100 ' + y + ' H 300';
+    o += '"/>';
+    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 114 V 54';
+    for (const y of niv) r += ' M300 ' + y + ' V ' + (y + 10) + ' H 114';
+    r += '"/>';
+    return o + r + schPuisages([150, 200, 250, 296], niv) + schEtiquette(195, 194, "1 boucle par niveau, en faux-plafond");
+  },
+  parapluieAller: () => {
+    const cols = [160, 230, 300];
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 30 H 300';
+    for (const x of cols) o += ' M' + x + ' 30 V ' + SCH.bas;
+    o += '"/>';
+    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308';
+    for (const x of cols) r += ' M' + x + ' ' + SCH.bas + ' V ' + SCH.collR;
+    r += '"/>';
+    return o + r + schPuisages(cols, [46, 92, 138])
+      + schEtiquette(100, 24, "collecteur aller commun", "start")
+      + schEtiquette(195, 194, "les colonnes descendent : retours très courts");
+  },
+  parapluieRetour: () => {
+    const cols = [160, 230, 300];
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 308';
+    for (const x of cols) o += ' M' + x + ' ' + SCH.collA + ' V 30';
+    o += '"/>';
+    let r = '<path class="sch-retour" d="M160 30 H 300 M100 30 H 160 M100 30 V ' + SCH.collR + ' H 66"/>';
+    return o + r + schPuisages(cols, [46, 92, 138])
+      + schEtiquette(100, 24, "collecteur retour commun", "start")
+      + schEtiquette(195, 194, "un seul retour vertical pour toutes les colonnes");
+  },
+  parapluieColonne: () => {
+    const cols = [225, 300];
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 130 V 30 H 300';
+    for (const x of cols) o += ' M' + x + ' 30 V ' + SCH.bas;
+    o += '"/>';
+    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308';
+    for (const x of cols) r += ' M' + x + ' ' + SCH.bas + ' V ' + SCH.collR;
+    r += ' M130 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
+    return o + r + schPuisages([130].concat(cols), [46, 92, 138])
+      + schEtiquette(130, 24, "1re colonne commune", "start")
+      + schEtiquette(195, 194, "la 1re colonne dessert aussi : la plus courte, mais coupure générale");
+  },
+  uInverse: () => {
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 276'
+      + ' M120 ' + SCH.collA + ' V 32 H 180 V ' + SCH.bas
+      + ' M246 ' + SCH.collA + ' V 32 H 300 V ' + SCH.bas + '"/>';
+    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 308'
+      + ' M180 ' + SCH.bas + ' V ' + SCH.collR
+      + ' M300 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
+    return o + r + schPuisages([120, 180, 246, 300], [46, 92, 138])
+      + schEtiquette(150, 26, "U inversé")
+      + schEtiquette(195, 194, "2 colonnes par boucle : moitié moins de boucles");
+  },
+  horizCourt: () => {
+    const niv = [44, 90, 136];
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 44';
+    for (const y of niv) o += ' M100 ' + y + ' H 300';
+    o += '"/>';
+    // Le retour ne retrace pas l'aller : il rejoint la colonne de retour en direct.
+    let r = '<path class="sch-retour" d="M66 ' + SCH.collR + ' H 114 V 54';
+    for (const y of niv) r += ' M300 ' + y + ' L 114 ' + (y + 14);
+    r += '"/>';
+    return o + r + schPuisages([150, 200, 250, 296], niv)
+      + schEtiquette(195, 194, "retours en direct, sans retracer l'aller");
+  }
+};
+
+const SCHEMAS_MAINTIEN = {
+  tracage: () => {
+    const niv = [44, 90, 136];
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 100 V 44';
+    for (const y of niv) o += ' M100 ' + y + ' H 300';
+    o += '"/>';
+    // Le cordon suit exactement le tracé de l'aller : pas de seconde canalisation.
+    let c = '<path class="sch-cordon" d="M58 ' + (SCH.collA - 4) + ' H 96 V 40';
+    for (const y of niv) c += ' M96 ' + (y - 4) + ' H 300';
+    c += '"/>';
+    return o + c + schPuisages([150, 200, 250, 296], niv)
+      + '<rect class="sch-prod" x="10" y="98" width="34" height="18" rx="3"/>'
+      + schEtiquette(27, 111, "230 V")
+      + schEtiquette(195, 194, "aucune canalisation de retour, aucun circulateur");
+  },
+  sans: () => {
+    let o = '<path class="sch-aller" d="M56 ' + SCH.collA + ' H 120 V 138 M120 138 H 160"/>';
+    return o + schPuisages([164], [138])
+      + schEtiquette(195, 194, "admis sous 3 litres et 8 m d'antenne");
+  }
+};
+
+function rendreSchema() {
+  const zone = $("zoneSchema");
+  if (!zone) return;
+  const sc = scenarioActif();
+  const maintien = modeMaintien(sc);
+  const boucle = maintien === "boucle";
+  const cle = boucle ? modeArchi(sc) : maintien;
+  const dessin = boucle ? SCHEMAS_ARCHI[cle] : SCHEMAS_MAINTIEN[cle];
+  if (!dessin) { zone.innerHTML = ""; return; }
+
+  const titre = boucle ? ARCHI_BOUCLAGE[cle].label : MAINTIEN[cle].label;
+  const legende = boucle
+    ? [["sch-aller", "aller"], ["sch-retour", "retour"], ["sch-pompe", "circulateur"]]
+    : (maintien === "tracage" ? [["sch-aller", "distribution"], ["sch-cordon", "cordon chauffant"]]
+                              : [["sch-aller", "distribution"]]);
+
+  zone.innerHTML = '<div class="sch-titre">' + ech(titre) + "</div>"
+    + '<svg viewBox="0 0 ' + SCH.w + " " + SCH.h + '" role="img" aria-label="Schéma de principe : ' + ech(titre) + '">'
+    + schCadre()
+    + schProduction(boucle)
+    + dessin()
+    + "</svg>"
+    + '<div class="sch-legende">'
+    + legende.map(l => '<span><i style="border-top-color:var(' +
+        (l[0] === "sch-aller" ? "--primaire" : l[0] === "sch-retour" ? "--moyenne" : l[0] === "sch-cordon" ? "--haute" : "--encre-2") +
+        ')' + (l[0] === "sch-retour" || l[0] === "sch-cordon" ? ";border-top-style:dashed" : "") + '"></i>' + ech(l[1]) + "</span>").join("")
+    + '<span><i style="border-top-color:var(--encre-2)"></i>puisages</span></div>'
+    + '<div class="sch-note">Schéma de principe sur un bâtiment R+2, sans échelle : il illustre '
+    + (boucle ? "le tracé décrit par [B1] fig. 15" : "le principe du mode retenu")
+    + ', pas votre installation.</div>';
+}
+
+/* ================================================================
    SECTION 4 - INTERFACE
    ================================================================ */
 const $ = id => document.getElementById(id);
@@ -1523,6 +1717,7 @@ function rendreFormulaire() {
     if (ch.si && !ch.si(sc)) continue;
     zb.appendChild(creerChamp(sc, ch, ch.id));
   }
+  rendreSchema();
   const zv = $("zoneVerif");
   zv.innerHTML = "";
   for (const ch of CHAMPS_VERIF) zv.appendChild(creerChamp(sc, ch, ch.id));
@@ -1929,6 +2124,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v7", date: "2026-08-29", titre: "Schémas de principe",
+    texte: "Une vue en coupe d'un bâtiment R+2 accompagne le panneau et change avec le mode de maintien et l'architecture retenue : sept tracés de bouclage d'après le guide COSTIC, plus le traçage électrique et la distribution sans maintien. La différence entre architectures devient visible." },
   { v: "v6", date: "2026-08-29", titre: "Matériau de l'aller et du retour",
     texte: "Le matériau se choisit séparément pour l'aller et pour le retour, le second reprenant le premier par défaut. Quatre gammes de diamètres commerciaux : cuivre et PVC-C PN25 et PN16 d'après le guide COSTIC, multicouche sur dimensions commerciales courantes. Les diamètres proposés suivent enfin le matériau retenu." },
   { v: "v5", date: "2026-08-29", titre: "Journal des versions",

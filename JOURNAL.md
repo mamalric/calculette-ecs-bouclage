@@ -2,6 +2,15 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v7 : schémas de principe)
+- Demande de l'utilisateur : rendre visible ce que recouvrent les architectures de bouclage, beaucoup de gens ne voyant pas la différence entre elles dans une simple liste déroulante. Un schéma en coupe d'un bâtiment R+2 accompagne désormais le panneau et change avec le mode de maintien et l'architecture retenue.
+- Neuf tracés dessinés en SVG : les sept architectures de [B1] fig. 15 (colonnes montantes, horizontale, les trois parapluies, U inversé, horizontale à retours courts), plus le traçage électrique et la distribution sans maintien. Chaque tracé suit le trajet réel de l'eau, de la production aux puisages puis au retour.
+- Ce que les schémas rendent immédiatement lisible : le parapluie montre pourquoi ses retours sont très courts (les colonnes descendent au lieu de monter), le U inversé montre qu'une boucle dessert deux colonnes, et le traçage montre l'absence pure et simple de canalisation de retour.
+- Aucune couleur codée en dur : le SVG prend les variables du thème, il suit donc le clair et le sombre. Rien n'est chargé de l'extérieur.
+- Honnêteté du dessin : une note sous chaque schéma rappelle qu'il s'agit d'un principe sans échelle, illustrant [B1] fig. 15 pour les architectures et le principe du mode retenu pour les deux autres, et non l'installation de l'utilisateur.
+- Deux retouches après contrôle visuel : la boîte "230 V" du traçage chevauchait le symbole de production, et la note renvoyait à la figure 15 même pour les modes sans bouclage, où cette référence n'a pas de sens.
+- Vérification : les 9 tracés rendus pour les 7 usages, aucun schéma manquant, aucune coordonnée invalide, en clair comme en sombre.
+
 ## 2026-08-29 (v6 : matériau de l'aller et du retour)
 - Incohérence signalée par l'utilisateur : il avait choisi PVC-C multicouche comme matériau du retour, mais la liste des diamètres de l'aller proposait toujours du cuivre. En réalité l'aller n'avait aucun matériau, il était implicitement cuivre dans les libellés, et le sélecteur ne servait qu'à fixer la vitesse limite du retour.
 - Sa proposition, retenue : deux sélecteurs, un par tronçon. Sur sa question de savoir si le matériau est généralement le même de part et d'autre, la réponse est oui, l'aller et le retour d'une même boucle étant posés ensemble. Le matériau du retour reprend donc celui de l'aller par défaut, et ne s'en écarte que si on le change, ce qui couvre la rénovation partielle sans imposer deux choix dans le cas courant.
