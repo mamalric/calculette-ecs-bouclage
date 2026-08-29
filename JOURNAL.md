@@ -2,6 +2,13 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v18 : échangeur au format portrait)
+- L'utilisateur propose un autre dessin d'échangeur et demande mon avis : format portrait, quatre piquages en ronds aux angles, corrugation en chevrons entre les deux rangées.
+- Avis rendu après essai plutôt que d'emblée, la question réelle étant la lisibilité à trente pixels. Le dessin est adopté : il est à la fois plus fidèle et plus lisible que le mien. Les quatre ronds aux angles forment une signature simple qui survit à la réduction, là où mes piquages décalés restaient ambigus une fois réduits.
+- Il corrige aussi une sur-interprétation de ma part. À la remarque précédente sur des piquages "en biseau, pas symétriques", j'avais décalé verticalement les piquages de droite. C'était excessif : sur un échangeur à plaques, les quatre piquages sont bien aux angles de la plaque de serrage, donc géométriquement symétriques. Ce qui est diagonal, c'est la circulation, le primaire entrant en haut d'un côté et ressortant en bas pendant que le secondaire fait l'inverse. Cette diagonale est portée par le raccordement, pas par la position des piquages, et elle est conservée.
+- Le symbole passe de 30 sur 34 à 28 sur 46, la corrugation à cinq chevrons cantonnés entre les deux rangées de piquages.
+- Vérification : tous les croisements usage x production x maintien x architecture, avec contrôle qu'aucun chevron ne recouvre un piquage, qu'aucun texte n'en chevauche un autre, que rien ne sort du cadre et qu'aucun résultat n'est invalide.
+
 ## 2026-08-29 (v17 : semi-accumulation, son échangeur rétabli)
 - Question de l'utilisateur : la semi-accumulation n'a pas d'échangeur ? Vérification faite, il a raison de s'en étonner, et c'est une incohérence que j'avais introduite.
 - Le mode s'intitule dans l'outil "Semi-accumulation (échangeur + ballon)", et c'est bien ce qu'il désigne en ECS collective : un échangeur à plaques externe chargeant un ballon de stockage. Je l'avais pourtant dessiné avec un serpentin et sans échangeur, en me calant sur son efficacité de stockage par défaut plutôt que sur son intitulé.

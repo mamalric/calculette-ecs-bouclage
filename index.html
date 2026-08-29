@@ -1371,34 +1371,30 @@ function schRobinetsHoriz(xs, ys, dy) {
    de corrugation et quatre piquages, deux par circuit. Les chevrons sont volontairement peu
    nombreux (trois) et légèrement plus pâles que le corps : à la taille du schéma, en mettre
    davantage donnerait un aplat gris illisible. */
-/* Positions des quatre piquages d'un échangeur à plaques. Ils ne sont pas symétriques :
-   le circuit primaire entre en haut d'un côté et ressort en bas, le secondaire fait
-   l'inverse de l'autre côté, si bien que les deux entrées sont diagonalement opposées.
-   C'est la circulation à contre-courant, qui est le principe même de l'échangeur. */
+/* Échangeur à plaques, vue de face de la plaque de serrage : format portrait, quatre
+   piquages aux angles, corrugation en chevrons entre les deux rangées de piquages.
+   Les quatre piquages sont bien aux angles, donc géométriquement symétriques : ce qui est
+   diagonal sur un échangeur, c'est la circulation, primaire entrant en haut d'un côté et
+   ressortant en bas pendant que le secondaire fait l'inverse. C'est ce que traduit le
+   raccordement, pas la position des piquages. */
 function schEchPorts(x, y, w, h) {
-  return { pg1: y + 6, pg2: y + h - 6, pd1: y + 11, pd2: y + h - 11,
-           xg: x + 5, xd: x + w - 5 };
+  return { xg: x + 7, xd: x + w - 7, pHaut: y + 8, pBas: y + h - 8 };
 }
 function schEchangeur(x, y, w, h) {
   const cx = x + w / 2, P = schEchPorts(x, y, w, h);
   let o = '<rect class="sch-prod" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="4"/>';
-  // Corrugation en chevrons. Quatre suffisent : au-delà, à cette taille, le motif se referme
-  // en aplat gris et ne se lit plus.
-  const n = 4, haut = y + 10, pas = (h - 18) / (n - 1);
+  // Corrugation, cantonnée entre les deux rangées de piquages pour ne rien recouvrir.
+  const haut = P.pHaut + 9, bas = P.pBas - 5, n = 5, pas = (bas - haut) / (n - 1);
   for (let i = 0; i < n; i++) {
     const yc = haut + i * pas;
-    // Chevrons resserrés : à pleine largeur ils passaient sur les piquages, qui sont dans
-    // les angles, et l'ensemble devenait confus.
-    o += '<path class="sch-ech-chev" d="M' + (x + 9) + ' ' + yc + ' L' + cx + ' ' + (yc - 3.5) + ' L' + (x + w - 9) + ' ' + yc + '"/>';
+    o += '<path class="sch-ech-chev" d="M' + (x + 5) + ' ' + yc + ' L' + cx + ' ' + (yc - 3.2) + ' L' + (x + w - 5) + ' ' + yc + '"/>';
   }
-  // Les quatre piquages, dessinés comme des ronds : c'est par eux qu'entrent et sortent le
-  // primaire, à gauche, et le secondaire, à droite.
-  o += '<path class="sch-ech" d="M' + x + ' ' + P.pg1 + ' h-5 M' + x + ' ' + P.pg2 + ' h-5'
-    + ' M' + (x + w) + ' ' + P.pd1 + ' h5 M' + (x + w) + ' ' + P.pd2 + ' h5"/>';
-  o += '<circle class="sch-port" cx="' + P.xg + '" cy="' + P.pg1 + '" r="2.6"/>'
-    + '<circle class="sch-port" cx="' + P.xg + '" cy="' + P.pg2 + '" r="2.6"/>'
-    + '<circle class="sch-port" cx="' + P.xd + '" cy="' + P.pd1 + '" r="2.6"/>'
-    + '<circle class="sch-port" cx="' + P.xd + '" cy="' + P.pd2 + '" r="2.6"/>';
+  // Les quatre piquages, aux angles : primaire à gauche, secondaire à droite.
+  o += '<path class="sch-ech" d="M' + x + ' ' + P.pHaut + ' h-5 M' + x + ' ' + P.pBas + ' h-5'
+    + ' M' + (x + w) + ' ' + P.pHaut + ' h5 M' + (x + w) + ' ' + P.pBas + ' h5"/>';
+  for (const px of [P.xg, P.xd]) for (const py of [P.pHaut, P.pBas]) {
+    o += '<circle class="sch-port" cx="' + px + '" cy="' + py + '" r="3.2"/>';
+  }
   return o;
 }
 
@@ -1446,7 +1442,7 @@ function modeProduction(sc) {
 function schProduction(modeProd, avecPompe, avecRetour) {
   const cfg = PROD_SCHEMA[modeProd] || PROD_SCHEMA.semiAccu;
   const basB = 178, xb = 46, wb = 26;
-  const xe = 5, ye = 140, we = 30, he = 34;      // échangeur à plaques
+  const xe = 5, ye = 132, we = 28, he = 46;      // échangeur à plaques, format portrait
   const P = schEchPorts(xe, ye, we, he);
   let o = "";
 
@@ -1475,11 +1471,11 @@ function schProduction(modeProd, avecPompe, avecRetour) {
       // le haut. C'est ce circuit, et non un serpentin, qui chauffe un ballon stratifié.
       const hautB = basB - cfg.ballon;
       // Sortie chaude en haut vers le haut du ballon, reprise froide en bas vers son pied.
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pd1 + ' H' + (xb - 3) + ' V' + (hautB + 4) + ' H' + xb + '"/>';
-      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pd2 + ' H' + (xb - 6) + ' V' + (basB - 5) + ' H' + xb + '"/>';
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' H' + (xb - 3) + ' V' + (hautB + 4) + ' H' + xb + '"/>';
+      o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pBas + ' H' + (xb - 6) + ' V' + (basB - 5) + ' H' + xb + '"/>';
     } else if (cfg.ballon === 0) {
-      o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + P.pd1 + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
-      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 5) + ' V' + P.pd2 + '"/>';
+      o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
+      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 5) + ' V' + P.pBas + '"/>';
     }
   }
 
@@ -2329,6 +2325,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v18", date: "2026-08-29", titre: "Échangeur au format portrait",
+    texte: "L'échangeur adopte la vue de face d'une plaque de serrage : format portrait et quatre piquages aux angles. Les piquages redeviennent symétriques, ce qui est correct : sur un échangeur, c'est la circulation qui est diagonale, pas la position des piquages." },
   { v: "v17", date: "2026-08-29", titre: "Semi-accumulation : son échangeur rétabli",
     texte: "Le mode s'appelle \"échangeur + ballon\" mais était dessiné sans échangeur. Il retrouve son échangeur externe et sa boucle de charge. Conséquence sur le calcul : son efficacité de stockage passe de 0,75 à 0,85, valeur sourcée pour un ballon stratifié chargé de cette façon, ce qui réduit le volume visé d'environ 12 %." },
   { v: "v16", date: "2026-08-29", titre: "Alignement des cases et lisibilité de l'échangeur",
