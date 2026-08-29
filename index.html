@@ -179,6 +179,16 @@ h3:first-child{margin-top:0}
    Les intitulés de la grille de typologie (T1, T2...) sont hors de ce mécanisme, ils n'ont
    pas de .fld-tete. */
 .fld-tete > label:not(.chkligne){min-height:2.7em}
+/* Une case à cocher porte son intitulé sur sa propre ligne : sans compensation elle remonte
+   au niveau des intitulés voisins au lieu de s'aligner sur leurs champs. On lui réserve donc
+   la hauteur d'un intitulé plus l'espacement, et on la centre sur la hauteur d'un champ
+   (37 px mesurés : 14 px de police, 7 px de marge haute et basse, 1 px de bordure).
+   Le 2.7em est multiplié explicitement par 12px, taille de police des intitulés : écrit
+   "2.7em", il se calculerait ici sur les 14px hérités du conteneur et décalerait la case.
+   Le calage se fait sur la première ligne (padding de 8,5 px, moitié de l'écart entre les
+   37 px du champ et les 20 px d'une ligne) et non en centrant le bloc : un intitulé de case
+   qui se replie sur deux lignes décalerait sinon la case vers le bas. */
+.fld-tete.chk{margin-top:calc(2.7 * 12px + 5px);align-items:flex-start;padding-top:8.5px}
 .fld-tete{display:flex;align-items:flex-start;gap:6px}
 .fld-tete > label{flex:1;min-width:0}
 .hint{font-size:11px;color:var(--discret);font-weight:400;line-height:1.45}
@@ -239,7 +249,11 @@ button.reset{
 .grilleTypo{display:grid;grid-template-columns:repeat(6,minmax(56px,1fr));gap:8px}
 .grilleTypo .fld label{font-size:11.5px}
 .grilleTypo input{width:100%}
-.chkligne{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--encre-2);cursor:pointer;margin:2px 0}
+/* La case se cale sur la première ligne de son intitulé, pas au milieu du bloc : sinon un
+   intitulé qui se replie sur deux lignes fait descendre la case et rompt l'alignement avec
+   les champs voisins. Les 2 px centrent la case de 16 px sur une ligne de 20 px. */
+.chkligne{display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:600;color:var(--encre-2);cursor:pointer;margin:2px 0}
+.chkligne input[type=checkbox]{margin-top:2px}
 /* Case à cocher redessinée : accent-color laisse le rendu natif du navigateur, qui ignore
    le thème. On reprend donc la mécanique du Sélectionneur de radiateurs, avec la coche en
    image de fond (elle ne peut pas prendre une variable CSS, d'où une règle par thème). */
@@ -1373,7 +1387,9 @@ function schEchangeur(x, y, w, h) {
   const n = 4, haut = y + 10, pas = (h - 18) / (n - 1);
   for (let i = 0; i < n; i++) {
     const yc = haut + i * pas;
-    o += '<path class="sch-ech-chev" d="M' + (x + 4) + ' ' + yc + ' L' + cx + ' ' + (yc - 4) + ' L' + (x + w - 4) + ' ' + yc + '"/>';
+    // Chevrons resserrés : à pleine largeur ils passaient sur les piquages, qui sont dans
+    // les angles, et l'ensemble devenait confus.
+    o += '<path class="sch-ech-chev" d="M' + (x + 9) + ' ' + yc + ' L' + cx + ' ' + (yc - 3.5) + ' L' + (x + w - 9) + ' ' + yc + '"/>';
   }
   // Les quatre piquages, dessinés comme des ronds : c'est par eux qu'entrent et sortent le
   // primaire, à gauche, et le secondaire, à droite.
@@ -1429,8 +1445,8 @@ function modeProduction(sc) {
 
 function schProduction(modeProd, avecPompe, avecRetour) {
   const cfg = PROD_SCHEMA[modeProd] || PROD_SCHEMA.semiAccu;
-  const basB = 178, xb = 42, wb = 28;
-  const xe = 6, ye = 140, we = 22, he = 34;      // échangeur à plaques
+  const basB = 178, xb = 46, wb = 26;
+  const xe = 5, ye = 140, we = 30, he = 34;      // échangeur à plaques
   const P = schEchPorts(xe, ye, we, he);
   let o = "";
 
@@ -1799,7 +1815,7 @@ function creerChamp(scenario, ch, cle) {
     ligne.appendChild(document.createTextNode(ch.label));
     // La case a son intitulé dans son propre label : le bouton (i) se pose à côté.
     const tete = document.createElement("div");
-    tete.className = "fld-tete";
+    tete.className = "fld-tete chk";
     tete.appendChild(ligne);
     if (ch.aide) tete.appendChild(boutonAide(ch, scenario));
     wrap.appendChild(tete);
@@ -2310,6 +2326,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v16", date: "2026-08-29", titre: "Alignement des cases et lisibilité de l'échangeur",
+    texte: "Les cases à cocher s'alignent sur les champs de leur rangée et non sur les intitulés. L'échangeur est élargi pour que ses chevrons ne passent plus sur ses piquages." },
   { v: "v15", date: "2026-08-29", titre: "Échangeur : piquages corrigés",
     texte: "Les quatre ronds de l'échangeur sont les piquages des circuits primaire et secondaire, décalés et non symétriques, le primaire entrant en haut d'un côté et ressortant en bas quand le secondaire fait l'inverse. Le trait vertical superflu, pris à tort pour une plaque de serrage, est supprimé." },
   { v: "v14", date: "2026-08-29", titre: "Lisibilité des schémas horizontaux",

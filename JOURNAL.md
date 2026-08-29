@@ -2,6 +2,13 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v16 : alignement des cases, lisibilité de l'échangeur)
+- Case à cocher : elle se plaçait au niveau des intitulés voisins et non de leurs champs, faute d'intitulé au-dessus d'elle. Elle reçoit désormais la hauteur d'un intitulé plus l'espacement, et se cale sur la hauteur d'un champ, mesurée à 37 px.
+- Deux pièges rencontrés en chemin, tous deux révélés par la mesure et non par l'oeil. D'abord un `2.7em` écrit dans le conteneur se calculait sur ses 14 px hérités au lieu des 12 px de l'intitulé, d'où 5 px de décalage : la valeur est maintenant multipliée explicitement par 12 px. Ensuite la case se centrait sur l'ensemble de son intitulé, si bien qu'un intitulé replié sur deux lignes la faisait descendre de 12 px ; elle se cale désormais sur sa première ligne.
+- Vérification : écart vertical entre les champs de chaque rangée mesuré sur les 21 combinaisons et les quatre panneaux, en visant la case elle-même et non son bloc. Zéro rangée désalignée.
+- Échangeur : ses chevrons passaient sur ses piquages et l'ensemble devenait confus. Le symbole est élargi de 22 à 30 px, les chevrons resserrés vers le centre et le ballon reculé pour laisser passer la boucle de charge. Les piquages sont dans les angles, dégagés.
+- Vérification ajoutée au banc : aucun chevron ne doit recouvrir un piquage, contrôlé par intersection des emprises sur tous les croisements. Aucun.
+
 ## 2026-08-29 (v15 : échangeur, piquages corrigés)
 - Trois corrections signalées par l'utilisateur sur le symbole d'échangeur, toutes fondées.
 - J'avais mal lu l'image de référence : les deux ronds y sont les piquages des circuits, et je les avais pris pour des tirants de serrage. Ils deviennent donc les quatre piquages réels, dessinés en ronds, et ce sont eux que raccordent les canalisations.
