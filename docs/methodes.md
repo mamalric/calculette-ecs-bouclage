@@ -313,3 +313,19 @@ Nota d'affichage : les tables sources sont en L/h, mais l'interface exprime tous
 - Ouverture supérieure ou égale à 1 mm des organes d'équilibrage (NF DTU 60.11 P1-2).
 - Perte de charge minimale de la vanne d'équilibrage : 200 mmCE (300 mmCE si mesure de débit par prises de pression), [B1] p. 61.
 - Perte de charge totale du circuit le plus défavorisé, production incluse : 5 mCE maximum ; échangeur ECS : moins de 2 mCE.
+
+## 4. Conventions du schéma de principe
+
+Le schéma qui accompagne les résultats n'entre dans aucun calcul : il illustre l'architecture, le mode de maintien et le mode de production retenus, pour rendre visible une différence que le tableau chiffré ne montre pas. Le tracé des réseaux suit [B1] fig. 15 p. 18-20 ; les conventions de fluides ci-dessous sont propres à l'outil.
+
+Trois fluides, trois couleurs, et surtout deux circuits qui ne communiquent jamais.
+
+- **Eau froide sanitaire** : arrive du réseau de ville, en pied de ballon, ou au piquage bas du secondaire de l'échangeur en production instantanée.
+- **ECS et retour de bouclage** : le circuit sanitaire proprement dit, puisé en haut du ballon, repris en pied.
+- **Primaire** : le fluide chauffant. Sur tous les modes disposant d'un ballon, le secondaire de l'échangeur à plaques est une **boucle fermée non potable** qui alimente le serpentin du ballon. Ce fluide ne rencontre nulle part l'eau sanitaire : l'échange se fait à travers la paroi du serpentin.
+
+Le serpentin est toujours dessiné dans la partie basse du ballon, à hauteur constante, et raccordé par ses deux extrémités basses. C'est là qu'il réchauffe l'eau la plus froide sans brasser la stratification, dont le maintien conditionne l'efficacité R retenue au 2.2.
+
+**Exception de l'instantané.** Produire de l'ECS sans stockage suppose un échange direct vers l'eau sanitaire : il n'existe pas de variante à boucle fermée. Sur ce mode l'échangeur dessiné est donc l'échangeur ECS lui-même, l'eau froide entrant à son piquage bas et l'ECS sortant au piquage haut, le primaire restant cantonné aux deux piquages de gauche. En réseau bouclé, le retour se mélange à l'eau froide en amont de l'échangeur. La séparation des fluides reste assurée par les plaques, comme sur tout échangeur ECS.
+
+En accumulation, il n'y a pas d'échangeur externe : le primaire alimente directement le serpentin.

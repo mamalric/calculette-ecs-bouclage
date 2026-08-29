@@ -37,6 +37,9 @@
   --lien:#4c6a19;
   --haute:#bc3f38;
   --haute-fond:#fbeae8;
+  /* Eau froide sanitaire : il fallait une teinte franchement distincte de l'olive de l'ECS
+     et du rouge du primaire, sans quoi les trois fluides du schema se confondent. */
+  --froid:#20718f;
   --moyenne:#b87a15;
   --moyenne-fond:#fdf3e2;
   --note-fond:#fdf6e6;
@@ -68,6 +71,7 @@
   --lien:#b8d67c;
   --haute:#e5837c;
   --haute-fond:#3b2321;
+  --froid:#6dbcd8;
   --moyenne:#e3ad63;
   --moyenne-fond:#382c15;
   --note-fond:#332a14;
@@ -284,7 +288,9 @@ button.reset{
   display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;
   margin-top:10px;font-size:11.5px;color:var(--discret);
 }
-.schema .sch-legende span{display:inline-flex;align-items:center;gap:5px}
+/* nowrap sur l'entrée : sans lui, "primaire (boucle fermée)" se coupe en trois lignes et la
+   légende se lit moins bien que le schéma qu'elle explique. La rupture se fait entre entrées. */
+.schema .sch-legende span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .schema .sch-legende i{display:inline-block;width:16px;height:0;border-top-width:2.5px;border-top-style:solid}
 .schema .sch-titre{font-size:12px;font-weight:600;color:var(--encre-2);text-align:center;margin-bottom:8px}
 .schema .sch-note{font-size:11px;color:var(--discret);text-align:center;margin-top:8px;line-height:1.45}
@@ -300,6 +306,7 @@ button.reset{
 .sch-port{fill:var(--papier);stroke:var(--encre-2);stroke-width:1.3}
 .sch-serpentin{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .sch-charge{fill:none;stroke:var(--haute);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.sch-froid{fill:none;stroke:var(--froid);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .sch-pompe{fill:var(--papier);stroke:var(--moyenne);stroke-width:2}
 .sch-pompe-fl{fill:var(--moyenne);stroke:none}
 .sch-antenne{fill:none;stroke:var(--primaire);stroke-width:1.5;stroke-linecap:round}
@@ -414,6 +421,7 @@ footer.pied{
     --ligne:#c7cbc6;--ligne-2:#dcdfda;
     --primaire:#7da32f;--primaire-fond:#eaf3d8;--primaire-bord:#a9c67d;--primaire-encre:#3f5a12;--lien:#3f5a12;
     --haute:#a8332c;--haute-fond:#fbeae8;--moyenne:#96620f;--moyenne-fond:#fdf3e2;
+    --froid:#1a5f79;
     --note-fond:#fdf6e6;--note-bord:#c39434;--sur-primaire:#ffffff;--ombre:none;
   }
   body{background:#fff;font-size:11px}
@@ -1315,7 +1323,7 @@ function valeursScenario(scenario) {
    l'architecture retenue. Ce sont des schémas de principe, pas des plans : ils
    illustrent les descriptions de [B1] fig. 15, sans respecter d'échelle.
    ================================================================ */
-const SCH = { w: 340, h: 226, x0: 74, bas: 150, collA: 162, collR: 178, solY: 156 };
+const SCH = { w: 340, h: 236, x0: 74, bas: 150, collA: 162, collR: 178, solY: 156 };
 
 function schCadre() {
   return '<rect class="sch-bat" x="76" y="18" width="242" height="138" rx="3"/>'
@@ -1412,13 +1420,20 @@ function schSerpentin(x, y, w, h, tours, xSortie) {
 
 /* Production : le symbole suit le mode retenu dans "Hypothèses générales". Ballon d'autant
    plus haut que le mode accumule, échangeur seul en instantané, ballon seul en accumulation. */
-/* Technologie associée à chaque mode. Elle suit l'efficacité de stockage annoncée par
-   l'outil pour ce mode : un ballon à échangeur incorporé (0,75) ne se dessine pas comme un
-   ballon stratifié chargé par un échangeur externe (0,90). Les deux ne se cumulent pas, ce
-   serait un double échange. */
+/* Technologie associée à chaque mode, et hauteur du ballon proportionnée au volume stocké.
+
+   Convention de tracé, qui vaut pour tous les modes disposant d'un ballon : le secondaire de
+   l'échangeur est une boucle fermée, non potable, qui alimente le serpentin. L'eau sanitaire
+   ne circule jamais dans l'échangeur : elle arrive froide en pied de ballon, se réchauffe au
+   contact du serpentin et repart en haut. Les deux fluides ne se rencontrent nulle part.
+
+   L'instantané est la seule exception, et elle est physique, pas graphique : produire de
+   l'ECS sans stockage suppose un échange direct vers l'eau sanitaire. Son échangeur est donc
+   l'échangeur ECS lui-même, avec l'eau froide raccordée à son secondaire, et le libellé le
+   dit. */
 const PROD_SCHEMA = {
   instantane:   { ballon: 0,  ech: true,
-                  libelle: "instantané", techno: "échangeur à plaques seul" },
+                  libelle: "instantané", techno: "échangeur ECS, eau froide au secondaire" },
   semiInst:     { ballon: 50, ech: true,
                   libelle: "semi-instantané", techno: "échangeur et ballon, faible volume" },
   semiAccu:     { ballon: 64, ech: true,
@@ -1448,6 +1463,10 @@ function schProduction(modeProd, avecPompe, avecRetour) {
      réchauffe l'eau la plus froide sans brasser la stratification. Ses deux raccordements
      restent bas, l'échangeur ne rejoint jamais le haut du ballon. */
   const serpHaut = basB - 28, serpBas = basB - 4, xSerp = 38;
+  /* L'eau froide court sous le bloc de production, seule hauteur libre entre le pied des
+     appareils et les étiquettes. Sans elle le schéma ne disait pas d'où venait l'eau
+     sanitaire, et le primaire semblait ressortir dans le réseau consommé. */
+  const yFroid = 190;
   let o = "";
 
   if (cfg.ballon > 0) {
@@ -1456,6 +1475,8 @@ function schProduction(modeProd, avecPompe, avecRetour) {
     // Trait de stratification : l'eau chaude occupe le haut du ballon.
     o += '<line class="sch-prod" x1="' + xb + '" y1="' + (hautB + 9) + '" x2="' + (xb + wb) + '" y2="' + (hautB + 9) + '"/>';
     o += schSerpentin(xb + 6, serpHaut, wb - 12, serpBas - serpHaut, 3, xSerp);
+    // Eau froide sanitaire en pied de ballon : c'est elle qui remplit le volume potable.
+    o += '<path class="sch-froid" d="M0 ' + yFroid + ' H' + (xb + 6) + ' V' + basB + '"/>';
     // ECS puisée en haut du ballon, retour de bouclage repris en pied.
     o += '<path class="sch-aller" d="M' + (xb + wb) + ' ' + (hautB + 4) + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
     if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xb + wb) + ' V' + (basB - 6) + '"/>';
@@ -1464,21 +1485,31 @@ function schProduction(modeProd, avecPompe, avecRetour) {
   if (cfg.ech) {
     o += schEchangeur(xe, ye, we, he);
     if (cfg.ballon > 0) {
-      // Les deux piquages de droite rejoignent les deux extrémités du serpentin, toutes deux
-      // en partie basse : aucun raccordement ne monte au sommet du ballon.
+      /* Secondaire en boucle fermée : les deux piquages de droite rejoignent les extrémités
+         du serpentin, toutes deux en partie basse. Ce fluide chauffe le ballon sans jamais
+         se mêler à l'eau sanitaire, qui reste de l'autre côté de la paroi du serpentin. */
       o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' V' + serpHaut + ' H' + xSerp + '"/>';
       o += '<path class="sch-charge" d="M' + (xe + we + 5) + ' ' + P.pBas + ' V' + serpBas + ' H' + xSerp + '"/>';
     } else {
-      // Instantané : pas de ballon, l'échangeur alimente directement la distribution.
+      /* Instantané : sans ballon, l'échange se fait forcément vers l'eau sanitaire. L'eau
+         froide entre au piquage bas du secondaire et l'ECS sort au piquage haut ; le
+         primaire reste cantonné aux deux piquages de gauche. */
       o += '<path class="sch-aller" d="M' + (xe + we + 5) + ' ' + P.pHaut + ' H' + SCH.x0 + ' V' + SCH.collA + '"/>';
-      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 5) + ' V' + P.pBas + '"/>';
+      o += '<path class="sch-froid" d="M0 ' + yFroid + ' H' + (xe + we + 5) + ' V' + P.pBas + '"/>';
+      // Le retour de bouclage se mélange à l'eau froide en amont de l'échangeur.
+      if (avecRetour) o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H' + (xe + we + 12) + ' V' + yFroid + ' H' + (xe + we + 5) + '"/>';
     }
+  } else {
+    /* Accumulation : pas d'échangeur externe, le primaire alimente directement le serpentin.
+       Ses deux amorces partent du bord du cadre, comme l'eau froide : arrêtées en pleine
+       page elles ressemblaient à des canalisations sectionnées. */
+    o += '<path class="sch-charge" d="M0 ' + serpHaut + ' H' + xSerp + ' M0 ' + serpBas + ' H' + xSerp + '"/>';
   }
 
   if (avecPompe) o += schCirculateur(92, SCH.collR, 6.5);
   // Deux lignes : le mode, puis la technologie qu'il suppose.
-  return o + schEtiquette(4, 192, cfg.libelle, "start")
-    + schEtiquette(4, 205, cfg.techno, "start");
+  return o + schEtiquette(4, 202, cfg.libelle, "start")
+    + schEtiquette(4, 215, cfg.techno, "start");
 }
 
 function schEtiquette(x, y, t, ancre) {
@@ -1496,7 +1527,7 @@ const SCHEMAS_ARCHI = {
     o += '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 308';
     for (const x of cols) o += ' M' + x + ' 32 H ' + (x + 14) + ' V ' + SCH.collR;
     o += '"/>';
-    return o + schRobinetsCol(cols, [44, 90, 136], -1) + schEtiquette(170, 218, "1 boucle par colonne");
+    return o + schRobinetsCol(cols, [44, 90, 136], -1) + schEtiquette(170, 228, "1 boucle par colonne");
   },
   horizontale: () => {
     // Tronçons placés haut dans chaque niveau : il faut la place, sous eux, pour le retour
@@ -1508,7 +1539,7 @@ const SCHEMAS_ARCHI = {
     let r = '<path class="sch-retour" d="M' + SCH.x0 + ' ' + SCH.collR + ' H 118 V 42';
     for (const y of niv) r += ' M302 ' + y + ' V ' + (y + 10) + ' H 118';
     r += '"/>';
-    return o + r + schRobinetsHoriz([160, 215, 270], niv) + schEtiquette(170, 218, "1 boucle par niveau, en faux-plafond");
+    return o + r + schRobinetsHoriz([160, 215, 270], niv) + schEtiquette(170, 228, "1 boucle par niveau, en faux-plafond");
   },
   parapluieAller: () => {
     const cols = [170, 240, 305];
@@ -1520,7 +1551,7 @@ const SCHEMAS_ARCHI = {
     r += '"/>';
     return o + r + schRobinetsCol(cols, [44, 90, 136], -1)
       + schEtiquette(104, 23, "collecteur aller commun", "start")
-      + schEtiquette(170, 218, "les colonnes descendent : retours très courts");
+      + schEtiquette(170, 228, "les colonnes descendent : retours très courts");
   },
   parapluieRetour: () => {
     const cols = [170, 240, 305];
@@ -1530,7 +1561,7 @@ const SCHEMAS_ARCHI = {
     let r = '<path class="sch-retour" d="M170 28 H 305 M104 28 H 170 M104 28 V ' + SCH.collR + ' H ' + SCH.x0 + '"/>';
     return o + r + schRobinetsCol(cols, [44, 90, 136], -1)
       + schEtiquette(104, 23, "collecteur retour commun", "start")
-      + schEtiquette(170, 218, "un seul retour vertical pour toutes les colonnes");
+      + schEtiquette(170, 228, "un seul retour vertical pour toutes les colonnes");
   },
   parapluieColonne: () => {
     const cols = [235, 305];
@@ -1542,7 +1573,7 @@ const SCHEMAS_ARCHI = {
     r += ' M140 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
     return o + r + schRobinetsCol([140].concat(cols), [44, 90, 136], -1)
       + schEtiquette(140, 23, "1re colonne commune", "start")
-      + schEtiquette(170, 218, "la 1re colonne dessert aussi : coupure générale si on l'isole");
+      + schEtiquette(170, 228, "la 1re colonne dessert aussi : coupure générale si on l'isole");
   },
   uInverse: () => {
     let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 262'
@@ -1553,7 +1584,7 @@ const SCHEMAS_ARCHI = {
       + ' M310 ' + SCH.bas + ' V ' + SCH.collR + '"/>';
     return o + r + schRobinetsCol([130, 262], [44, 90, 136], -1) + schRobinetsCol([192, 310], [44, 90, 136], 1)
       + schEtiquette(161, 25, "U inversé")
-      + schEtiquette(170, 218, "2 colonnes par boucle : moitié moins de boucles");
+      + schEtiquette(170, 228, "2 colonnes par boucle : moitié moins de boucles");
   },
   horizCourt: () => {
     const niv = [32, 78, 124];
@@ -1565,7 +1596,7 @@ const SCHEMAS_ARCHI = {
     for (const y of niv) r += ' M302 ' + y + ' L 118 ' + (y + 14);
     r += '"/>';
     return o + r + schRobinetsHoriz([160, 215, 270], niv)
-      + schEtiquette(170, 218, "retours en direct, sans retracer l'aller");
+      + schEtiquette(170, 228, "retours en direct, sans retracer l'aller");
   }
 };
 
@@ -1582,12 +1613,12 @@ const SCHEMAS_MAINTIEN = {
     return o + c + schRobinetsHoriz([160, 215, 270], niv, 12)
       + '<rect class="sch-prod" x="6" y="112" width="30" height="16" rx="3"/>'
       + schEtiquette(21, 124, "230 V")
-      + schEtiquette(170, 218, "aucune canalisation de retour, aucun circulateur");
+      + schEtiquette(170, 228, "aucune canalisation de retour, aucun circulateur");
   },
   sans: () => {
     let o = '<path class="sch-aller" d="M' + SCH.x0 + ' ' + SCH.collA + ' H 130 V 136 H 158"/>';
     return o + schRobinet(158, 136, 9, 0)
-      + schEtiquette(170, 218, "admis sous 3 litres et 8 m d'antenne");
+      + schEtiquette(170, 228, "admis sous 3 litres et 8 m d'antenne");
   }
 };
 
@@ -1599,6 +1630,8 @@ function schVignette(type) {
   if (type === "retour") return d + '<line class="sch-retour" x1="3" y1="8" x2="27" y2="8"/></svg>';
   if (type === "cordon") return d + '<line class="sch-aller" x1="3" y1="11" x2="27" y2="11"/><line class="sch-cordon" x1="3" y1="6" x2="27" y2="6"/></svg>';
   if (type === "pompe") return d + '<line class="sch-retour" x1="3" y1="8" x2="27" y2="8"/>' + schCirculateur(15, 8, 6) + "</svg>";
+  if (type === "froid") return d + '<line class="sch-froid" x1="3" y1="8" x2="27" y2="8"/></svg>';
+  if (type === "primaire") return d + '<line class="sch-charge" x1="3" y1="8" x2="27" y2="8"/></svg>';
   if (type === "robinet") return d + schRobinet(2, 8, 8, 0, 16) + "</svg>";
   return d + "</svg>";
 }
@@ -1616,10 +1649,14 @@ function rendreSchema() {
   const prod = modeProduction(sc);
   const titre = (boucle ? ARCHI_BOUCLAGE[cle].label : MAINTIEN[cle].label)
     + " - production " + PROD_SCHEMA[prod].libelle;
-  const legende = boucle
+  /* Le primaire n'apparaît que si un serpentin est dessiné, c'est-à-dire dès qu'il y a un
+     ballon : en instantané l'échange se fait directement vers l'eau sanitaire. */
+  const fluides = [["froid", "eau froide"]]
+    .concat(PROD_SCHEMA[prod].ballon > 0 ? [["primaire", "primaire (boucle fermée)"]] : []);
+  const legende = (boucle
     ? [["aller", "aller"], ["retour", "retour"], ["pompe", "circulateur"], ["robinet", "puisage"]]
     : (maintien === "tracage" ? [["aller", "distribution"], ["cordon", "cordon chauffant"], ["robinet", "puisage"]]
-                              : [["aller", "distribution"], ["robinet", "puisage"]]);
+                              : [["aller", "distribution"], ["robinet", "puisage"]])).concat(fluides);
 
   zone.innerHTML = '<svg class="sch-defs" aria-hidden="true"><defs>' + SYMBOLE_ROBINET + '</defs></svg>'
     + '<div class="sch-titre">' + ech(titre) + "</div>"
@@ -2321,6 +2358,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v21", date: "2026-08-29", titre: "Eau sanitaire et primaire séparés au schéma",
+    texte: "Le schéma ne montrait aucune arrivée d'eau froide : le primaire semblait ressortir dans le réseau consommé. L'eau froide est désormais tracée, dans sa propre couleur, jusqu'au pied de ballon. Sur tous les modes à ballon, le secondaire de l'échangeur est une boucle fermée non potable qui alimente le serpentin, et ne rencontre nulle part l'eau sanitaire. L'instantané, qui suppose un échange direct, reçoit l'eau froide au piquage bas de son secondaire et délivre l'ECS au piquage haut." },
   { v: "v20", date: "2026-08-29", titre: "Ballons à la bonne échelle",
     texte: "Les ballons étaient trop petits, au point que le serpentin en occupait 70 % en semi-instantané. Ils sont agrandis pour que le serpentin reste cantonné à leur partie basse, tout en gardant la progression des volumes d'un mode à l'autre." },
   { v: "v19", date: "2026-08-29", titre: "Serpentin sur tous les ballons",

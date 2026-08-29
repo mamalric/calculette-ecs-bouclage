@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v21 : eau sanitaire et primaire séparés au schéma)
+- Défaut signalé par l'utilisateur sur la production instantanée : le secondaire de l'échangeur ne peut pas se mélanger à l'eau propre consommée par les utilisateurs. Le cas dessiné ne pouvait pas exister.
+- Diagnostic : le schéma ne montrait aucune arrivée d'eau froide. Rien ne disait d'où venait l'eau sanitaire, si bien que le primaire semblait entrer à gauche de l'échangeur et ressortir à droite dans le réseau consommé. C'est cette absence, plus que le tracé lui-même, qui rendait le dessin faux.
+- Convention arrêtée avec l'utilisateur, appliquée à tous les modes disposant d'un ballon : le secondaire de l'échangeur est une boucle fermée non potable qui alimente le serpentin. L'eau sanitaire arrive froide en pied de ballon, se réchauffe au contact du serpentin et repart en haut. Les deux fluides ne se rencontrent nulle part.
+- Exception de l'instantané, confirmée par l'utilisateur en cours de correction : produire de l'ECS sans stockage suppose un échange direct vers l'eau sanitaire, il n'existe pas de variante à boucle fermée. L'eau froide entre au piquage bas du secondaire, l'ECS sort au piquage haut, le primaire reste cantonné aux deux piquages de gauche. En réseau bouclé, le retour se mélange à l'eau froide en amont de l'échangeur, ce qui est le montage réel.
+- Ma question initiale posait le choix comme une alternative entre deux conventions. Elle était mal posée : aucune des deux ne couvre l'instantané, puisque l'échange y est nécessairement direct. La réponse tenable était de tenir la convention partout où il y a un ballon et d'assumer l'instantané comme une exception physique, pas comme une incohérence de tracé.
+- Ajouts de tracé : une couleur propre à l'eau froide, distincte de l'olive de l'ECS et du rouge du primaire, contraste vérifié à 5,1 en thème clair et 7,1 en thème sombre pour un seuil de 3 sur les tracés. Légende complétée par les deux fluides ajoutés. En accumulation, les deux amorces du primaire partent du bord du cadre : arrêtées en pleine page, elles ressemblaient à des canalisations sectionnées.
+- Cadre agrandi de 226 à 236 px de haut pour dégager la bande où court l'eau froide sous le bloc de production, étiquettes décalées en conséquence.
+- Vérification : 54 croisements production x architecture ou maintien, avec présence de l'arrivée d'eau froide, raccordement effectif au pied du ballon, absence de recoupement entre primaire et circuit sanitaire, serpentin cantonné et à ordonnée constante, aucun texte chevauché, rien hors cadre, aucune valeur invalide. Zéro écart.
+
 ## 2026-08-29 (v20 : ballons à la bonne échelle)
 - Défaut signalé par l'utilisateur : le ballon du semi-instantané est bien trop petit. Vérification faite, le serpentin, dont la place est fixe depuis la version précédente, en occupait 70 pour cent de la hauteur, ce qui contredit le principe même d'un serpentin cantonné à la partie basse.
 - Mon contrôle automatique était passé à côté : il vérifiait que le centre de gravité du serpentin est dans la moitié basse du ballon, ce qui restait vrai de justesse, mais pas qu'il n'envahit pas le ballon entier. Règle ajoutée : le serpentin ne doit pas dépasser 55 pour cent de la hauteur du ballon.
