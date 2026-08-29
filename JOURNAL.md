@@ -2,6 +2,11 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (mise en ligne de la v24)
+
+- Enregistrement et ouverture de projet confirmés par l'utilisateur sur son propre navigateur : le téléchargement se déclenche et le fichier produit se relit. C'était le seul point que le bac à sable ne permettait pas de vérifier.
+- Fusion de `dev` dans `main`, étiquette `v24`, Pages reconstruites.
+
 ## 2026-08-29 (v24 : enregistrer et ouvrir un projet)
 
 - L'utilisateur signale une fonctionnalité demandée au départ et jamais faite : sauvegarder un projet en JSON. Vérification faite, il a raison, elle figurait en piste dans la fiche et rien n'existait ; tout ne vivait que dans le localStorage, qui ne survit ni au changement de poste, ni au nettoyage du navigateur, ni au passage du dossier à un collègue.
