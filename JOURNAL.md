@@ -6,9 +6,9 @@
 - La ligne "Dernière mise à jour" du panneau "À propos" affiche désormais la date **et l'heure**, et surtout elle n'est plus recopiée à la main : elle vient de `document.lastModified`, c'est-à-dire la date de modification du fichier en local et l'en-tête `Last-Modified` du serveur en ligne, que GitHub Pages fournit bien (vérifié).
 - Ce qui a motivé le changement au-delà de la demande : la constante écrite à la main affichait le 2026-08-28 alors que le fichier datait du 29. Elle était donc déjà fausse, ce qui confirme la règle déjà appliquée aux compteurs du panneau, ne jamais recopier une donnée qu'on peut mesurer.
 - Garde-fou : sans en-tête `Last-Modified`, le navigateur renvoie l'heure de chargement, ce qui afficherait toujours "à l'instant". Le cas est détecté en comparant à l'instant d'exécution du script, et l'outil écrit alors "non fournie par le serveur" plutôt qu'une date trompeuse. Seuil resserré à 2 s après un premier essai à 5 s, l'écart mesuré sur un fichier tout juste enregistré étant de 6 s : trop large, une page ouverte juste après un enregistrement aurait été mal étiquetée.
-- Non fusionné dans `main`.
+- Fusionné dans `main` et étiqueté `v4`.
 
-## 2026-08-28 (v3 : modes de maintien en température)
+## 2026-08-29 (v3 : modes de maintien en température)
 - Deux défauts corrigés, signalés par l'utilisateur qui trouvait un retour de bouclage en cuivre 52/54 trop épais sur un hôtel. Le premier : le résultat affichait "Cuivre" quel que soit le matériau choisi. Il affiche désormais le matériau réellement retenu, et précise que le diamètre reste un équivalent cuivre, la table de débits de [B1] fig. 45 étant la seule publiée. Le second : rien n'alertait quand un réseau long produisait un diamètre de retour aberrant.
 - Diagnostic du cas signalé : 1 500 m de réseau modélisés en une seule boucle donnaient 20,9 kW de pertes, soit 1,7 fois l'énergie ECS réellement puisée, et un débit de 3,6 m³/h dans un retour unique. L'arithmétique était juste, le modèle ne l'était pas.
 - Nouveau : le nombre de boucles. Le débit total se répartit entre les boucles, chaque retour est dimensionné pour sa part et le collecteur pour le total, conformément aux définitions du NF DTU 60.11 reprises par [B1] fig. 1. Le même réseau en 5 boucles donne des retours en 26/28 au lieu d'un 52/54. Trois alertes ont été ajoutées : retour de diamètre inhabituel, dépassement de la table, et multibouclage quand le plancher de 0,2 m/s impose un débit supérieur à celui qu'exigent les pertes, effet que [B1] p. 16 décrit et proscrit.
@@ -18,7 +18,7 @@
 - Vérification : 63 combinaisons (7 usages x modes de production x 3 modes de maintien) sans erreur ni valeur invalide, tous les boutons d'aide ouverts, et visibilité des champs contrôlée pour les trois modes.
 - Fusionné dans `main` et étiqueté `v3`.
 
-## 2026-08-28 (v2 : aides derrière un bouton (i))
+## 2026-08-29 (v2 : aides derrière un bouton (i))
 - Les aides sous les champs (sources, ratios, mises en garde) noyaient le formulaire. Elles passent derrière un bouton (i) placé à droite de chaque intitulé, qui ouvre un panneau flottant avec le titre du champ et le texte. Le formulaire tient désormais sur une fraction de la hauteur précédente.
 - Choix technique : API Popover native plutôt qu'un positionnement maison. Le panneau est rendu dans le calque supérieur, donc jamais rogné par la colonne de résultats qui a son propre défilement, et le navigateur fournit la fermeture par clic extérieur et par Échap. Repli par classe si l'API manque.
 - Le panneau bascule au-dessus du bouton quand il ne tient pas en dessous, et reste borné à l'écran. Il se ferme au défilement (sinon il resterait décalé par rapport à son bouton) et à chaque reconstruction du formulaire.
@@ -27,7 +27,7 @@
 - Vérification : 7 usages x 4 modes, 394 boutons ouverts un par un, tous avec du contenu, aucune erreur ni valeur invalide. Interactions contrôlées une à une (ouverture, refermeture par le même bouton, changement de bouton, fermeture par le navigateur avec resynchronisation de l'état, défilement, reconstruction).
 - Fusionné dans `main` et étiqueté `v2`.
 
-## 2026-08-28 (thèmes clair et sombre, sur `dev`)
+## 2026-08-29 (thèmes clair et sombre, sur `dev`)
 - Diagnostic du rendu jugé peu esthétique : la palette héritée teintait d'olive les surfaces neutres elles-mêmes (`--papier-2` et `--papier-3` étaient des verts pâles). Résultat, un ensemble uniformément verdâtre où l'accent de marque ne ressortait plus, et une hiérarchie illisible en sombre (panneau, en-tête et champ de saisie à moins de trois points d'écart).
 - Correctif de fond : l'olive #7da32f reste la couleur de marque (logo, favicon, accents, ligne retenue, focus) mais les surfaces neutres le sont vraiment. Les niveaux fond < papier < papier-2 sont espacés pour que la hiérarchie se lise.
 - Les champs de saisie ont leur propre surface `--champ` au lieu de partager celle des en-têtes de panneaux : blancs en clair, un cran au-dessus du panneau en sombre. Ajout d'un survol et d'un anneau de focus.
@@ -39,7 +39,7 @@
 - Vérification : 7 usages x 4 modes sans erreur ni valeur invalide, dans les deux thèmes.
 - Non fusionné dans `main` : à valider visuellement avant publication.
 
-## 2026-08-28 (icônes, sur `dev`)
+## 2026-08-29 (icônes, sur `dev`)
 - Ajout d'un favicon, sur le même principe que le Sélectionneur de radiateurs : SVG en data URI, icône Lucide "droplets" blanche sur carré olive arrondi, aucune requête externe.
 - Structuration de l'interface par icônes Lucide inlinées, avec le mécanisme `data-ico` du projet radiateurs : `poserIcones()` parcourt les éléments porteurs de l'attribut et injecte l'icône en tête. Le HTML ne contient donc jamais de SVG recopié, seulement un nom d'icône.
 - Icônes posées : logo (gouttes), en-têtes des quatre panneaux de saisie et des deux panneaux de résultats, titres des sections de résultats (besoins, stockage, bouclage, vérification), boutons (imprimer, copier, nouveau, dupliquer, supprimer), bandeaux d'information et d'alerte.
@@ -49,13 +49,13 @@
 - Vérification : 7 usages x 4 modes sans erreur, 20 icônes posées, aucune icône manquante ni inconnue, favicon présent.
 - Fusionné dans `main` et étiqueté `v1` : le site en ligne reçoit le favicon et les icônes.
 
-## 2026-08-28 (mise en ligne)
+## 2026-08-29 (mise en ligne)
 - L'utilisateur a déployé la page sur GitHub Pages : https://mamalric.github.io/calculette-ecs-bouclage/, servie depuis `main` à la racine, HTTPS forcé, build en succès. C'est donc la v0 étiquetée qui est en ligne.
 - Le dépôt est passé de privé à public à cette occasion (condition des Pages gratuites). Tout le contenu du dépôt est désormais lisible publiquement : `idee-origine.md`, `JOURNAL.md`, `FICHE.md` et `CLAUDE.md` compris. Rien de confidentiel ne s'y trouve (aucune donnée client, aucun secret), mais les conventions de travail et les autres projets cités y sont visibles.
 - Vérification de la page en ligne : titre, version v0, 7 usages, 9 sources et rouage présents, aucune erreur console. Le `localStorage` fonctionne réellement sur l'origine https, contrairement à l'aperçu local en `file://` où il lève une SecurityError. Les scénarios enregistrés sur le site et ceux du fichier local sont donc deux stocks distincts.
 - Conséquence pour la suite : les Pages servent `main`, le travail sur `dev` n'apparaîtra en ligne qu'après fusion.
 
-## 2026-08-28 (v0)
+## 2026-08-29 (v0)
 - Ajout du panneau "À propos" ouvert par le rouage en haut à droite, repris du Sélectionneur de radiateurs (même `<dialog>`, mêmes styles, mêmes icônes Lucide inlinées). Contenu : version, périmètre couvert, registre des sources, scénario en cours, informations techniques.
 - Le registre des sources est devenu une donnée (`SOURCES`) au lieu d'un commentaire : les codes [G1], [B1], etc. employés dans les aides et les résultats renvoient à cette liste unique, que le panneau affiche avec les liens. Impossible désormais que la liste diverge de ce que l'outil utilise.
 - Tous les compteurs du panneau sont calculés à l'ouverture (7 usages, 54 champs, 4 modes, 9 diamètres cuivre, 6 classes d'isolation, 13 Ko de données de référence) et non recopiés : ils ne peuvent pas mentir après un ajout.
@@ -63,7 +63,7 @@
 - Version v0 validée : étiquette `v0` posée sur `main`, branche `dev` créée pour la suite.
 - Constat de test : le stockage local est inaccessible dans l'aperçu intégré (SecurityError sur file://), le code le gère déjà par try/catch et le panneau affiche maintenant "inaccessible ici" au lieu d'un trompeur "0 octet". Corollaire : le scénario que je croyais avoir écrasé dans la session précédente ne l'a jamais été, l'aperçu n'ayant aucun accès au localStorage du navigateur de l'utilisateur.
 
-## 2026-08-28 (suite)
+## 2026-08-29 (suite)
 - Débits affichés en m³/h partout (cartes, notes, vérification d'existant, synthèse) : le L/h des tables COSTIC ne parle pas à l'utilisateur. Le calcul reste en L/h en interne, conversion à l'affichage sur trois décimales pour ne rien perdre sur les petites boucles (0,085 m³/h à 0,2 m/s dans un cuivre 12/14). Le champ de saisie de l'existant a changé d'identifiant (`vDebitM3`) pour qu'un scénario enregistré en L/h ne soit pas relu dans la mauvaise unité.
 - Ajout d'un sélecteur de mode de production en tertiaire (instantané, semi-instantané, semi-accumulation, accumulation), en réponse à la question de l'utilisateur. Le mode ne change pas la méthode (le bilan de pointe reste valable pour tous) : il fixe le point visé sur la courbe volume/puissance et l'efficacité de stockage de la technologie associée. Un comparatif des quatre modes est affiché, chacun avec ses propres hypothèses, le mode retenu surligné.
 - L'efficacité de stockage est désormais préremplie par le mode (0,90 ballon stratifié sur échangeur externe selon ThermExcel, 0,75 ballon à échangeur incorporé selon Energie+ 0,5-0,8), au lieu d'un 0,85 global sans justification. Reste modifiable.
@@ -72,7 +72,8 @@
 - Vérification : 7 usages x 4 modes passés au banc, aucune erreur, aucun NaN, dans le rendu comme dans la synthèse. Hôtel 70 chambres à 80 % : instantané 78,6 kW sans stockage, semi-instantané 1 000 L / 52,4 kW, semi-accumulation 2 500 L / 26,2 kW, accumulation 6 000 L / 13,1 kW.
 - Écart signalé à l'utilisateur : un test a écrasé son scénario "Hotel Ibis" en localStorage, restauré ensuite.
 
-## 2026-08-28
+## 2026-08-29 (cadrage, dépôt et première version)
+- Nota : les entrées de cette session avaient d'abord été datées du 2026-08-28 par erreur, en recopiant la date de l'entrée existante. Elles sont rectifiées au 2026-08-29, seule la création du projet depuis le modèle datant bien du 28.
 - Cadrage validé par l'utilisateur : 7 usages dès la v1 (logement, bureaux, hôtel, restaurant, sport/vestiaires, santé, scolaire), méthode COSTIC/ADEME pour le stockage, bouclage par pertes thermiques, et les 4 fonctionnalités secondaires (vérification d'existant, impression propre, localStorage, multi-scénarios).
 - Recherche documentaire (3 agents web) : guide ADEME/COSTIC 2016 (besoins habitat, formules de pointe), guide ADEME/EDF/GRDF/COSTIC 2019 (couples volume/puissance P = 14.V^-0,365 et 17.V^-0,385, volume minimal, surpuissance bouclage 2,5x), étude COSTIC/GRDF/ADEME 2020 (ratios tertiaire à 40 °C), guide COSTIC/ADEME 2021 bouclage (débit, pertes, vitesses, diamètres cuivre), arrêté du 30/11/2005 vérifié sur Légifrance. Tout est consigné avec sources et niveaux de confiance dans docs/methodes.md.
 - Développement de index.html : une page autonome, moteur de calcul pur (méthode COSTIC en logement, bilan de pointe type ThermExcel en tertiaire, bouclage NF DTU 60.11 via guide 2021), formulaires par usage avec défauts sourcés et bouton "défaut", multi-scénarios en onglets (localStorage), vérification d'existant avec badges d'écart, impression A4 propre, copie de synthèse texte.
@@ -80,10 +81,12 @@
 - Vérification croisée dans le navigateur : 48 T3 social -> 3 360 L/j à 60 °C, pointe 1 h 1 286 L, 1 000 L -> 54 kW ; hôtel 50 chambres 3 ét. -> 6 240 L/j à 40 °C, recommandation 2 000 L / 21,8 kW ; restaurant traditionnel 200 repas -> 5 000 L/j à 40 °C, 1 500 L / 17,4 kW ; bouclage 100 m De28 classe 4 -> 1 481 W, 255 L/h, retour cuivre 20/22. Ordres de grandeur conformes au métier.
 - Hypothèses signalées comme non sourcées ou fragiles (à valider en usage réel) : fractions de pointe bureaux/santé/scolaire, ratio hôtel 1-2 étoiles, ratio internat (source belge), barème annexe 1 de l'arrêté de 2005 (non reproduit sur Légifrance).
 - Reste à faire : v2 possible (pertes annuelles du bouclage en kWh, comparateur multi-méthodes côte à côte, export JSON des scénarios) ; confrontation des résultats à un vrai projet BET.
-- Création du projet à partir du modèle `application`, depuis le gestionnaire.
-- Idée d'origine déplacée depuis dev/_ideas/ (fichier idee-origine.md).
 - Installation de GitHub CLI (gh 2.98.0) via winget, connexion au compte GitHub mamalric (compte professionnel, à ne pas confondre avec Marckuss).
 - Création du dépôt privé https://github.com/mamalric/calculette-ecs-bouclage et premier push.
 - FICHE.md renseignée (pitch, tags, stack, lancer, depot).
 - Décision : stack HTML/CSS/JS vanilla en une page autonome, conformément à la convention "petits outils" (le champ type reste `application`, valeur posée par le gestionnaire).
 - En attente : validation du cadrage (types de bâtiments v1, méthodes de calcul, hypothèses par défaut) avant tout développement.
+
+## 2026-08-28
+- Création du projet à partir du modèle `application`, depuis le gestionnaire.
+- Idée d'origine déplacée depuis dev/_ideas/ (fichier idee-origine.md).
