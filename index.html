@@ -1836,11 +1836,26 @@ const APP = {
   nom: "Calculette ECS et Bouclage",
   // Suffixe "+dev" tant que le travail n'est pas fusionné dans main : le panneau dit
   // ainsi clairement si l'on regarde la version publiée ou une version en cours.
-  version: "v3",
-  maj: "2026-08-28",
+  version: "v3+dev",
   methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
   icones: "Lucide, licence ISC"
 };
+
+/* Date de mise à jour : horodatage réel du fichier plutôt qu'une date recopiée à la main,
+   qui finit toujours par être fausse. document.lastModified vaut la date de modification
+   du fichier en local, et l'en-tête Last-Modified du serveur en ligne (GitHub Pages le
+   fournit). Faute d'en-tête, le navigateur renvoie l'heure de chargement : on le détecte
+   en comparant à l'instant où le script s'est exécuté, et on le dit au lieu d'afficher une
+   date trompeuse. Le seuil est serré (2 s) car dans ce cas l'écart est quasi nul, alors
+   qu'un fichier réellement enregistré juste avant l'ouverture peut l'être de quelques
+   secondes ; en cas de doute on préfère afficher la date que la prétendre absente. */
+const INSTANT_CHARGEMENT = Date.now();
+function dateMaj() {
+  const d = new Date(document.lastModified);
+  if (isNaN(d.getTime())) return "inconnue";
+  if (Math.abs(d.getTime() - INSTANT_CHARGEMENT) < 2000) return "non fournie par le serveur";
+  return d.toLocaleDateString("fr-FR") + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
 
 function statsCouverture() {
   let champsUsage = 0;
@@ -1879,7 +1894,7 @@ function renderStats() {
   blocs.push(groupeStats("Application", "info", [
     ligneStat("Nom", ech(APP.nom)),
     ligneStat("Version", ech(APP.version)),
-    ligneStat("Dernière mise à jour", ech(APP.maj)),
+    ligneStat("Dernière mise à jour", ech(dateMaj())),
     ligneStat("Méthode de calcul", ech(APP.methode)),
     ligneStat("Fichier", "HTML autonome, hors ligne")
   ]));

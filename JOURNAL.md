@@ -2,6 +2,12 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (date de mise à jour réelle, sur `dev`)
+- La ligne "Dernière mise à jour" du panneau "À propos" affiche désormais la date **et l'heure**, et surtout elle n'est plus recopiée à la main : elle vient de `document.lastModified`, c'est-à-dire la date de modification du fichier en local et l'en-tête `Last-Modified` du serveur en ligne, que GitHub Pages fournit bien (vérifié).
+- Ce qui a motivé le changement au-delà de la demande : la constante écrite à la main affichait le 2026-08-28 alors que le fichier datait du 29. Elle était donc déjà fausse, ce qui confirme la règle déjà appliquée aux compteurs du panneau, ne jamais recopier une donnée qu'on peut mesurer.
+- Garde-fou : sans en-tête `Last-Modified`, le navigateur renvoie l'heure de chargement, ce qui afficherait toujours "à l'instant". Le cas est détecté en comparant à l'instant d'exécution du script, et l'outil écrit alors "non fournie par le serveur" plutôt qu'une date trompeuse. Seuil resserré à 2 s après un premier essai à 5 s, l'écart mesuré sur un fichier tout juste enregistré étant de 6 s : trop large, une page ouverte juste après un enregistrement aurait été mal étiquetée.
+- Non fusionné dans `main`.
+
 ## 2026-08-28 (v3 : modes de maintien en température)
 - Deux défauts corrigés, signalés par l'utilisateur qui trouvait un retour de bouclage en cuivre 52/54 trop épais sur un hôtel. Le premier : le résultat affichait "Cuivre" quel que soit le matériau choisi. Il affiche désormais le matériau réellement retenu, et précise que le diamètre reste un équivalent cuivre, la table de débits de [B1] fig. 45 étant la seule publiée. Le second : rien n'alertait quand un réseau long produisait un diamètre de retour aberrant.
 - Diagnostic du cas signalé : 1 500 m de réseau modélisés en une seule boucle donnaient 20,9 kW de pertes, soit 1,7 fois l'énergie ECS réellement puisée, et un débit de 3,6 m³/h dans un retour unique. L'arithmétique était juste, le modèle ne l'était pas.
