@@ -2,6 +2,13 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-29 (v8 : alignement des champs de saisie)
+- Défaut signalé par l'utilisateur : un intitulé passant sur deux lignes décalait son champ vers le bas par rapport aux champs voisins de la même rangée. Visible par exemple sur "Température ambiante des locaux traversés" à côté de "Classe d'isolation", mais présent à plusieurs endroits.
+- Correction retenue : réserver la hauteur de deux lignes à tous les intitulés de champ (`min-height: 2.7em`), ce qui met les contrôles au même niveau quel que soit le nombre de lignes réellement occupées. C'est la solution du Sélectionneur de radiateurs, d'où vient le thème.
+- Elle n'a été retenue qu'après mesure : sur les 21 combinaisons d'usage et de mode de maintien, à la largeur minimale réelle d'une colonne (230 px), aucun intitulé ne dépasse deux lignes. La réserve de deux lignes suffit donc en usage réel.
+- Une variante avait été essayée puis écartée : pousser le contrôle en bas de la cellule étirée, par une marge automatique. Le test a montré 25 px d'écart résiduel, et le diagnostic est instructif : cette variante aligne les **bas** des contrôles, or dans une colonne étroite la ligne "saisie plus unité plus bouton défaut" se replie sur deux lignes, si bien qu'aligner les bas désaligne précisément les hauts que l'on cherchait à aligner. Le raisonnement est consigné en commentaire dans la feuille de style pour éviter que quelqu'un la retente.
+- Vérification : contrôle automatique de l'écart vertical entre les champs de chaque rangée, sur les 21 combinaisons et les quatre panneaux de saisie, à la largeur courante puis à 230 px. Zéro rangée désalignée dans les deux cas.
+
 ## 2026-08-29 (v7 : schémas de principe)
 - Demande de l'utilisateur : rendre visible ce que recouvrent les architectures de bouclage, beaucoup de gens ne voyant pas la différence entre elles dans une simple liste déroulante. Un schéma en coupe d'un bâtiment R+2 accompagne désormais le panneau et change avec le mode de maintien et l'architecture retenue.
 - Neuf tracés dessinés en SVG : les sept architectures de [B1] fig. 15 (colonnes montantes, horizontale, les trois parapluies, U inversé, horizontale à retours courts), plus le traçage électrique et la distribution sans maintien. Chaque tracé suit le trajet réel de l'eau, de la production aux puisages puis au retour.

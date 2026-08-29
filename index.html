@@ -166,6 +166,19 @@ h3:first-child{margin-top:0}
 /* :not(.chkligne) : l'intitulé d'une case à cocher garde sa propre taille, il est porté
    par le label qui entoure la case et non par un intitulé de champ classique. */
 .fld > label:not(.chkligne),.fld-tete > label:not(.chkligne){font-size:12px;font-weight:600;color:var(--encre-2);line-height:1.35}
+/* Un intitulé passant sur deux lignes décalait son champ vers le bas par rapport aux champs
+   voisins de la même rangée. On réserve donc la hauteur de deux lignes à tous les intitulés
+   de champ : les contrôles se retrouvent au même niveau quel que soit le nombre de lignes
+   réellement occupées. Mesuré sur les 21 combinaisons d'usage et de mode : aucun intitulé ne
+   dépasse deux lignes à la largeur minimale de colonne (230 px), le cas ne se présente donc
+   pas en usage réel.
+   Une variante avait été essayée, pousser le contrôle en bas de la cellule étirée par une
+   marge automatique. Elle est écartée : elle aligne les bas, et comme la ligne "saisie plus
+   unité plus défaut" se replie sur deux lignes dans une colonne étroite, aligner les bas
+   désaligne précisément les hauts que l'on cherche à aligner.
+   Les intitulés de la grille de typologie (T1, T2...) sont hors de ce mécanisme, ils n'ont
+   pas de .fld-tete. */
+.fld-tete > label:not(.chkligne){min-height:2.7em}
 .fld-tete{display:flex;align-items:flex-start;gap:6px}
 .fld-tete > label{flex:1;min-width:0}
 .hint{font-size:11px;color:var(--discret);font-weight:400;line-height:1.45}
@@ -2124,6 +2137,8 @@ function initTheme() {
    La version affichée plus haut en découle : une seule source, donc pas de divergence
    possible entre l'en-tête du panneau et cette liste. */
 const CHANGELOG = [
+  { v: "v8", date: "2026-08-29", titre: "Alignement des champs de saisie",
+    texte: "Un intitulé passant sur deux lignes décalait son champ vers le bas par rapport à ses voisins. La hauteur de deux lignes est désormais réservée à tous les intitulés : les champs d'une même rangée sont alignés, dans les quatre panneaux de saisie." },
   { v: "v7", date: "2026-08-29", titre: "Schémas de principe",
     texte: "Une vue en coupe d'un bâtiment R+2 accompagne le panneau et change avec le mode de maintien et l'architecture retenue : sept tracés de bouclage d'après le guide COSTIC, plus le traçage électrique et la distribution sans maintien. La différence entre architectures devient visible." },
   { v: "v6", date: "2026-08-29", titre: "Matériau de l'aller et du retour",
