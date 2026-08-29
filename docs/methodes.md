@@ -211,6 +211,40 @@ Nota : les valeurs issues du NF DTU 60.11 P1-2 et du NF DTU 60.1 (documents AFNO
 - Aux points de puisage : 50 °C maximum dans les pièces destinées à la toilette, 60 °C maximum ailleurs.
 - Consigne de production recommandée : 60 °C ([B1] p. 9 ; 55 °C en consigne ne permet généralement pas de tenir 50 °C au bouclage).
 
+### 3.1 bis Mode de maintien en température
+
+Le couple aller plus retour ne vaut que pour un réseau bouclé. Trois modes sont proposés, qui ne se calculent pas de la même façon :
+
+- Réseau bouclé (aller + retour + circulateur) : c'est le cas traité par [B1] et le NF DTU 60.11. Pertes = aller + retour, débit de recirculation, diamètre de retour, puissance de compensation.
+- Traçage électrique (ruban ou cordon chauffant) : pas de canalisation de retour ni de circulateur, un cordon posé le long de l'aller compense les pertes en ligne. Il n'y a donc ni débit ni diamètre de retour, et les pertes valent environ la moitié de celles d'un réseau bouclé de même tracé. Ordre de grandeur publié : environ 7 W/m avec un calorifuge correct (Energie+, https://energieplus-lesite.be/concevoir/eau-chaude-sanitaire3/concevoir-globalement-ecs/choisir-le-reseau-d-eau-chaude-sanitaire/), et une consommation d'environ 60 % de celle d'une boucle, mais en électricité directe. Limite d'emploi : plus de circulation en période de non-puisage et panne de cordon difficile à détecter, d'où un risque légionelles accru (Batirama, https://www.batirama.com/article/1512-reseaux-d-eau-chaude-bouclage-ou-cordon-chauffant.html). Confiance moyenne sur la valeur de 7 W/m, source non normative.
+- Sans maintien en température : ni retour ni traçage. Admis seulement si le volume entre production et point de puisage le plus éloigné reste inférieur ou égal à 3 litres ([B3]) et si l'antenne ne dépasse pas 8 m (NF DTU 60.11 P1-2). Aucune puissance de compensation.
+
+Conséquence sur le reste du calcul : seul le réseau bouclé alimente la surpuissance de production (section 2.1). Un traçage est électrique et indépendant de la production ECS.
+
+### 3.1 ter Architecture du bouclage ([B1] fig. 15 p. 18-20 et fig. 16 p. 21, confiance haute)
+
+Le guide compare plusieurs architectures et publie leurs écarts de longueurs et de pertes thermiques, calculés sur l'immeuble de référence de 12 logements, par rapport à une distribution traditionnelle en colonnes montantes. Il précise que les écarts de longueurs en pourcentage correspondent pratiquement aux écarts de pertes, l'influence des diamètres étant limitée à niveau d'isolation identique : appliquer le pourcentage aux pertes est donc légitime.
+
+| Architecture | Écart de pertes | Remarque |
+|---|---|---|
+| Colonnes montantes (traditionnel) | référence | Distribution verticale, colonnes en gaines techniques |
+| Distribution horizontale par étage | +5 % | Écart très variable selon le bâtiment : 5 % sur l'immeuble R+2 de référence, jusqu'à 30 % sur un EHPAD R+3 (fig. 16). Recommandée en santé, pour permettre les coupures par service |
+| Parapluie, collecteur aller vertical commun | -7 % | Longueurs -9 %, mais collecteur d'alimentation plus long |
+| Parapluie, collecteur retour vertical commun | -9 % | Longueurs -9 %. Risque de retours inverses si les clapets défaillent |
+| Parapluie, première colonne commune | -17 % | Longueurs -20 %. Première colonne de plus gros diamètre |
+| Colonnes en U inversé | -16 % | Longueurs -18 %. Divise par deux le nombre de boucles et réduit le débit total |
+| Horizontale avec retours plus courts | -17 % | Longueurs -21 %. Plus onéreuse, multiplie les coudes sensibles à la corrosion-érosion en cuivre |
+
+Le coefficient n'est à utiliser qu'en avant-projet, sur des longueurs estimées pour un tracé traditionnel. Si les longueurs saisies sont celles du réseau réellement tracé, garder l'architecture de référence, qui n'applique aucune correction.
+
+### 3.1 quater Nombre de boucles
+
+Un réseau réel se découpe en plusieurs boucles, chacune avec son retour raccordé sur un collecteur ([B1] fig. 1, définitions du NF DTU 60.11 P1-2). Le débit total se répartit entre les boucles : chaque retour est dimensionné pour sa part, le collecteur pour le total. Modéliser un long réseau en une seule boucle conduit à un diamètre de retour démesuré, sans rapport avec la pratique.
+
+Le guide proscrit à l'inverse le multibouclage ([B1] p. 16) : un nombre de boucles élevé est ingérable à l'exploitation et impose des débits de bouclage très élevés, puisque chaque retour doit conserver au moins 0,2 m/s. La calculette reproduit cet effet et le signale quand le plancher de vitesse impose un débit supérieur à celui qu'exigent les pertes.
+
+Solutions publiées pour éviter le multibouclage ([B1] p. 16) : regrouper les points de puisage, rapprocher le réseau par des dévoiements plutôt que créer une boucle, différencier les parcours aller et retour pour desservir plus de points par boucle, recourir à plusieurs productions ou sous-stations, ou traiter en production décentralisée les points trop éloignés (au-delà d'environ 15 m).
+
 ### 3.2 Débit de bouclage ([B1] p. 51-61, confiance haute)
 
 - Formule : Q (L/h) = P (W) / (1,16 x deltaT), avec P les pertes thermiques du réseau bouclé et deltaT la chute de température admissible entre sortie de production et point le plus défavorisé.
@@ -231,6 +265,8 @@ Nota : les valeurs issues du NF DTU 60.11 P1-2 et du NF DTU 60.1 (documents AFNO
 - Retour de bouclage : vitesse entre 0,2 m/s (minimum NF DTU 60.11, turbulence, limite biofilm) et 0,5 m/s. Cuivre : moins de 0,3 m/s conseillé en régime permanent (corrosion-érosion).
 - Aller : 1,5 m/s maximum en colonnes et logements, 2 m/s en sous-sol ; collecteur de retour 1 m/s maximum.
 - Diamètre minimal du retour : cuivre 12/14, PVC-C 12,4/16, PEX/PB 13/16, autres matériaux 12 mm intérieur. Acier galvanisé à proscrire en bouclage ([B1] p. 67) et jamais en aval de cuivre.
+Nota matériau : la table de débits par diamètre publiée par [B1] est celle du cuivre. Pour un retour en PVC-C ou en multicouche, la calculette applique la vitesse limite du matériau (0,5 m/s au lieu de 0,3 m/s conseillé en cuivre) mais propose un diamètre en équivalent cuivre, à retraduire en dimension commerciale du matériau retenu. L'interface le signale.
+
 Nota d'affichage : les tables sources sont en L/h, mais l'interface exprime tous les débits en m³/h (division par 1000, trois décimales), unité de travail de l'utilisateur.
 
 - Débits par diamètre cuivre ([B1] fig. 45 p. 55), en L/h à 0,2 / 0,3 / 0,5 m/s : 12/14 : 85 / 120 / 200 ; 14/16 : 115 / 165 / 275 ; 16/18 : 145 / 215 / 360 ; 20/22 : 230 / 335 / 565 ; 26/28 : 385 / 570 / 955 ; 33/35 : 620 / 920 / 1535 ; 40/42 : 905 / 1355 / 2260 ; 52/54 : 1530 / 2290 / 3820 ; 60/64 : 2040 / 3050 / 5085.

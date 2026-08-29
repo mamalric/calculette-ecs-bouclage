@@ -415,10 +415,10 @@ footer.pied{
       </div>
 
       <div class="panel">
-        <h2 data-ico="boucle">Bouclage</h2>
+        <h2 data-ico="boucle">Maintien en température</h2>
         <div class="body">
           <div class="grid" id="zoneBouclage"></div>
-          <div class="notice">Renseigner une longueur aller nulle pour ignorer le calcul de bouclage.</div>
+          <div class="notice">Le couple aller plus retour n'existe que pour un réseau bouclé. Le traçage électrique n'a qu'un aller, et une distribution courte peut se passer de maintien : les champs sans objet disparaissent selon le mode retenu.</div>
         </div>
       </div>
 
@@ -476,7 +476,11 @@ const SOURCES = [
   { code: "B2", titre: "RAGE/PACTE 2014, Installations d'eau chaude sanitaire",
     url: "https://www.programmepacte.fr/sites/default/files/pdf/guide-rage-installations-eau-chaude-sanitaire-2014-11_0.pdf" },
   { code: "B3", titre: "Article 36 de l'arrêté du 23/06/1978 modifié par l'arrêté du 30/11/2005",
-    url: "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006828036" }
+    url: "https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000006828036" },
+  { code: "T1", titre: "Energie+ (UCLouvain), Choisir le réseau d'eau chaude sanitaire (traçage électrique)",
+    url: "https://energieplus-lesite.be/concevoir/eau-chaude-sanitaire3/concevoir-globalement-ecs/choisir-le-reseau-d-eau-chaude-sanitaire/" },
+  { code: "T2", titre: "Batirama, Réseaux d'eau chaude : bouclage ou cordon chauffant ?",
+    url: "https://www.batirama.com/article/1512-reseaux-d-eau-chaude-bouclage-ou-cordon-chauffant.html" }
 ];
 
 const C_EAU = 1.163e-3; // kWh/(L.K), confirmé COSTIC (1,16 arrondi) et ThermExcel
@@ -531,6 +535,7 @@ const USAGES = {
         ],
         aide: "Couples volume/puissance selon abaques COSTIC [S1]. L'instantané pur est déconseillé par le guide (affiché à titre d'information dans les résultats)." },
       { id: "bclRech", label: "Bouclage réchauffé par la production ECS", type: "checkbox", def: true,
+        si: sc => modeMaintien(sc) === "boucle",
         aide: "Si oui : surpuissance 2,5 x pertes du bouclage [S1] p. 41 (3 à 5 x selon raccordement, [B1] fig. 82)." }
     ]
   },
@@ -725,23 +730,88 @@ const HYPOTHESES = [
 ];
 
 // Champs bouclage
+/* Matériaux du retour. Les diamètres proposés restent ceux de la table cuivre de [B1]
+   fig. 45 : c'est la seule table de débits publiée dans le guide. Pour le PVC-C et le
+   multicouche, les dimensions commerciales diffèrent, la valeur est donc un équivalent
+   indicatif, signalé comme tel dans les résultats. */
+const MATERIAUX = {
+  cuivre: { label: "Cuivre", seuil: "q03",
+    note: "Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent (corrosion-érosion) [B1]." },
+  autre: { label: "PVC-C / multicouche", seuil: "q05",
+    note: "Vitesse limitée à 0,5 m/s [B1]. Diamètre donné en équivalent cuivre : reprendre la dimension commerciale du matériau retenu." }
+};
+
+/* Mode de maintien en température. Le couple aller + retour n'existe que pour un réseau
+   bouclé : le traçage électrique remplace le retour par un ruban chauffant posé sur l'aller,
+   et une distribution courte peut se passer de tout maintien. */
+const MAINTIEN = {
+  boucle: { label: "Réseau bouclé (aller + retour + circulateur)",
+    aide: "Recirculation permanente. Le retour ramène l'eau vers la production, un circulateur compense les pertes. C'est le cas traité par le guide COSTIC [B1] et le NF DTU 60.11." },
+  tracage: { label: "Traçage électrique (ruban chauffant, sans retour)",
+    aide: "Pas de canalisation de retour ni de circulateur : un cordon chauffant posé le long de l'aller compense les pertes en ligne. Environ 7 W/m avec un calorifuge correct (Energie+). Attention : plus de circulation en période de non-puisage, et une panne de cordon passe facilement inaperçue, d'où un risque légionelles accru. À réserver aux distributions à puisages réguliers." },
+  sans: { label: "Sans maintien en température (antennes courtes)",
+    aide: "Ni retour ni traçage. Admis seulement si le volume entre production et point de puisage le plus éloigné reste inférieur ou égal à 3 litres (arrêté du 30/11/2005), et si la longueur d'antenne ne dépasse pas 8 m (NF DTU 60.11 P1-2, habitation et bureaux)." }
+};
+
+/* Architectures de bouclage et écarts de pertes thermiques publiés par [B1] fig. 15 p. 18-20,
+   calculés sur l'immeuble de référence de 12 logements, par rapport à une distribution
+   traditionnelle en colonnes montantes. Le guide précise que les écarts de longueurs
+   correspondent pratiquement aux écarts de pertes, l'influence des diamètres étant limitée à
+   niveau d'isolation identique : appliquer le pourcentage aux pertes est donc légitime.
+   Ces écarts dépendent de la forme du bâtiment : à ne pas utiliser si les longueurs saisies
+   sont celles du réseau réellement tracé. */
+const ARCHI_BOUCLAGE = {
+  colonnes: { label: "Colonnes montantes (traditionnel)", k: 1.00,
+    aide: "Référence du guide [B1] : aucune correction appliquée. Distribution verticale très utilisée en habitat collectif, colonnes en gaines techniques. À garder si les longueurs saisies sont celles du réseau réellement tracé." },
+  horizontale: { label: "Distribution horizontale par étage", k: 1.05,
+    aide: "Pertes environ 5 % plus élevées que les colonnes montantes sur l'immeuble de référence R+2, et jusqu'à 30 % sur un EHPAD R+3 ([B1] fig. 16) : l'écart dépend fortement de la forme du bâtiment. Recommandée en établissement de santé, où elle permet des coupures d'eau par service." },
+  parapluieAller: { label: "Parapluie, collecteur aller vertical commun", k: 0.93,
+    aide: "Colonnes avec passage en faux-plafond au dernier niveau. Retours plus courts : longueurs -9 %, pertes -7 % ([B1] fig. 15). En contrepartie le collecteur d'alimentation est plus long." },
+  parapluieRetour: { label: "Parapluie, collecteur retour vertical commun", k: 0.91,
+    aide: "Longueurs -9 %, pertes -9 % ([B1] fig. 15). Attention aux retours inverses si les clapets contrôlables défaillent, et aux vannes d'équilibrage moins accessibles." },
+  parapluieColonne: { label: "Parapluie, première colonne commune", k: 0.83,
+    aide: "Une des configurations les plus économes : longueurs -20 %, pertes -17 % ([B1] fig. 15). En contrepartie la première colonne est de plus gros diamètre, et une coupure dessus prive tout le bâtiment." },
+  uInverse: { label: "Colonnes en U inversé", k: 0.84,
+    aide: "Longueurs -18 %, pertes -16 % ([B1] fig. 15). Divise par deux le nombre de boucles, réduit le débit total et simplifie l'équilibrage. Impose un passage en faux-plafond au dernier niveau." },
+  horizCourt: { label: "Horizontale avec retours plus courts", k: 0.83,
+    aide: "Longueurs -21 %, pertes -17 % ([B1] fig. 15). Débits de bouclage plus faibles et équilibrage simplifié, mais mise en oeuvre plus onéreuse et multiplication des coudes, sensibles à la corrosion-érosion en cuivre." }
+};
+
 const CHAMPS_BOUCLAGE = [
-  { id: "bLa", label: "Longueur du réseau bouclé, aller", type: "number", def: 100, min: 0, step: 5, unite: "m" },
+  { id: "bMaintien", label: "Maintien en température", type: "select", def: "boucle",
+    options: Object.keys(MAINTIEN).map(v => ({ v, t: MAINTIEN[v].label })),
+    aide: sc => MAINTIEN[modeMaintien(sc)].aide },
+  { id: "bArchi", label: "Architecture du bouclage", type: "select", def: "colonnes",
+    options: Object.keys(ARCHI_BOUCLAGE).map(v => ({ v, t: ARCHI_BOUCLAGE[v].label })),
+    si: sc => modeMaintien(sc) === "boucle",
+    aide: sc => ARCHI_BOUCLAGE[modeArchi(sc)].aide },
+  { id: "bNbBoucles", label: "Nombre de boucles", type: "number", def: 1, min: 1, max: 50, step: 1, unite: "boucles",
+    si: sc => modeMaintien(sc) === "boucle",
+    aide: "Le débit total se répartit entre les boucles : chaque retour est dimensionné pour sa part, le collecteur pour le total. Un réseau long en une seule boucle conduit à un retour démesuré. Attention au multibouclage, que [B1] proscrit : trop de boucles impose un débit total plus élevé (plancher de 0,2 m/s dans chaque retour) et devient ingérable à l'exploitation." },
+  { id: "bLa", label: "Longueur du réseau maintenu en température", type: "number", def: 100, min: 0, step: 5, unite: "m",
+    si: sc => modeMaintien(sc) !== "sans",
+    aide: "Longueur de la distribution aller. Une longueur nulle désactive le calcul." },
   { id: "bLr", label: "Longueur du retour de bouclage", type: "number", def: 0, min: 0, step: 5, unite: "m",
-    aide: "0 = prendre la même longueur que l'aller." },
+    si: sc => modeMaintien(sc) === "boucle",
+    aide: "0 = prendre la même longueur que l'aller. Certaines architectures ont un retour nettement plus court que l'aller (parapluie, U inversé, horizontale à retours courts) : saisir alors la longueur réelle." },
   { id: "bDeAller", label: "Diamètre extérieur moyen de l'aller", type: "select", def: "28",
     options: CUIVRE.map(t => ({ v: String(t.de), t: "De " + t.de + " (cuivre " + t.di + "/" + t.de + ")" })),
-    aide: "Diamètre moyen pondéré du réseau aller bouclé (pré-dimensionnement)." },
+    si: sc => modeMaintien(sc) !== "sans",
+    aide: "Diamètre moyen pondéré du réseau aller (pré-dimensionnement)." },
   { id: "bClasse", label: "Classe d'isolation (NF EN 12828)", type: "select", def: "4",
     options: [1, 2, 3, 4, 5, 6].map(cl => ({ v: String(cl), t: "Classe " + cl + (cl === 4 ? " (recommandée)" : "") })),
+    si: sc => modeMaintien(sc) !== "sans",
     aide: "Classe 4 minimum recommandée [B1]. k = coefficient maximal de la classe (approche sécuritaire)." },
   { id: "bTamb", label: "Température ambiante des locaux traversés", type: "number", def: 20, min: -10, max: 30, step: 1, unite: "°C",
+    si: sc => modeMaintien(sc) !== "sans",
     aide: "Gaine technique 20 °C, sous-sol 10 °C [B1]. Prendre l'ambiance minimale pour dimensionner." },
   { id: "bChute", label: "Chute de température admissible", type: "number", def: 5, min: 1, max: 7, step: 0.5, unite: "K",
+    si: sc => modeMaintien(sc) === "boucle",
     aide: "5 K maxi ([B1] p. 51-52 ; jusqu'à 7 K si la production ne descend jamais sous 57 °C). Garantit 50 °C au point le plus défavorisé (arrêté du 30/11/2005)." },
   { id: "bMat", label: "Matériau du retour", type: "select", def: "cuivre",
-    options: [{ v: "cuivre", t: "Cuivre (vitesse conseillée 0,3 m/s maxi)" }, { v: "autre", t: "Autre (PVC-C, multicouche...) - 0,5 m/s maxi" }],
-    aide: "Cuivre : moins de 0,3 m/s conseillé en permanent (corrosion-érosion) [B1]. Acier galvanisé à proscrire en bouclage." }
+    options: [{ v: "cuivre", t: "Cuivre - 0,3 m/s maxi conseillé" }, { v: "autre", t: "PVC-C / multicouche - 0,5 m/s maxi" }],
+    si: sc => modeMaintien(sc) === "boucle",
+    aide: "Cuivre : moins de 0,3 m/s conseillé en permanent (corrosion-érosion) [B1]. Acier galvanisé à proscrire en bouclage. Les diamètres proposés viennent de la table cuivre de [B1] fig. 45, seule table de débits publiée : en PVC-C ou multicouche, la valeur est un équivalent indicatif à retraduire en dimension commerciale." }
 ];
 
 const CHAMPS_VERIF = [
@@ -765,35 +835,79 @@ function kIsolant(classe, deMm) {
 }
 
 // ---- Bouclage : pertes, débit, diamètre retour, puissance ----
+// Lectures sûres des sélecteurs de bouclage, y compris avant toute saisie.
+function modeMaintien(sc) {
+  const v = sc.saisies ? sc.saisies["bMaintien"] : null;
+  return (v && MAINTIEN[v]) ? v : "boucle";
+}
+function modeArchi(sc) {
+  const v = sc.saisies ? sc.saisies["bArchi"] : null;
+  return (v && ARCHI_BOUCLAGE[v]) ? v : "colonnes";
+}
+
+/* Bouclage. Trois modes de maintien en température, qui ne se calculent pas de la même
+   façon : le réseau bouclé a un aller et un retour, le traçage électrique n'a que l'aller,
+   et une distribution courte n'a aucun maintien. */
 function calcBouclage(s) {
-  const La = s.bLa, Lr = (s.bLr > 0 ? s.bLr : s.bLa);
+  const maintien = MAINTIEN[s.bMaintien] ? s.bMaintien : "boucle";
+  if (maintien === "sans") return { maintien };
+
+  const La = s.bLa;
   if (!(La > 0)) return null;
   const classe = parseInt(s.bClasse, 10);
   const deAller = parseInt(s.bDeAller, 10);
   const chute = s.bChute, tamb = s.bTamb, tdep = s.tsto;
+  const archi = ARCHI_BOUCLAGE[s.bArchi] ? s.bArchi : "colonnes";
+  const kArchi = ARCHI_BOUCLAGE[archi].k;
+  const kA = kIsolant(classe, deAller);
+
+  if (maintien === "tracage") {
+    // Un seul tube maintenu en température : pas de retour, donc pas de débit ni de diamètre.
+    const dT = tdep - tamb;   // pas de chute de boucle : le ruban maintient la température
+    if (dT <= 0) return { maintien, erreur: "Température ambiante supérieure à la température de distribution : pertes nulles ou négatives." };
+    const pAller = kA * La * dT * kArchi;
+    return { maintien, archi, kArchi, classe, deAller, La, dT,
+             pAller, pRetour: 0, pertes: pAller, wParM: pAller / La };
+  }
+
+  // Réseau bouclé
+  const Lr = (s.bLr > 0 ? s.bLr : La);
+  const nb = Math.max(1, Math.round(s.bNbBoucles || 1));
   // Température moyenne de boucle approchée : départ - chute/2 (calcul tronçon par tronçon dans [B1])
   const dT = (tdep - chute / 2) - tamb;
-  if (dT <= 0) return { erreur: "Température ambiante supérieure à la température de boucle : pertes nulles ou négatives." };
-  const seuil = (s.bMat === "cuivre") ? "q03" : "q05";
+  if (dT <= 0) return { maintien, erreur: "Température ambiante supérieure à la température de boucle : pertes nulles ou négatives." };
+  const seuil = MATERIAUX[s.bMat] ? MATERIAUX[s.bMat].seuil : "q03";
+  const plusPetit = q => {
+    for (let i = 0; i < CUIVRE.length; i++) if (q <= CUIVRE[i][seuil]) return { i, depasse: false };
+    return { i: CUIVRE.length - 1, depasse: true };
+  };
+
   let iRet = 0, res = null;
-  for (let iter = 0; iter < 6; iter++) {
-    const kA = kIsolant(classe, deAller);
+  for (let iter = 0; iter < 8; iter++) {
     const kR = kIsolant(classe, CUIVRE[iRet].de);
-    const pAller = kA * La * dT;
-    const pRetour = kR * Lr * dT;
+    const pAller = kA * La * dT * kArchi;
+    const pRetour = kR * Lr * dT * kArchi;
     const pertes = pAller + pRetour;
-    const qPertes = pertes / (1.16 * chute);          // [B1] p. 57-60
-    const qRetenu = Math.max(qPertes, CUIVRE[iRet].q02); // v >= 0,2 m/s (NF DTU 60.11 via [B1])
-    // plus petit diamètre respectant la vitesse maxi au débit retenu
-    let iNew = CUIVRE.length - 1, depasse = true;
-    for (let i = 0; i < CUIVRE.length; i++) {
-      if (qRetenu <= CUIVRE[i][seuil]) { iNew = i; depasse = false; break; }
-    }
-    res = { pAller, pRetour, pertes, qPertes, qMin: CUIVRE[iNew].q02, qRetenu: Math.max(qPertes, CUIVRE[iNew].q02),
-            tube: CUIVRE[iNew], vitesse: 0.2 * Math.max(qPertes, CUIVRE[iNew].q02) / CUIVRE[iNew].q02,
-            depasse, dT, La, Lr, classe, deAller, chute };
-    if (iNew === iRet) break;
-    iRet = iNew;
+    const qPertes = pertes / (1.16 * chute);        // [B1] p. 57-60
+    // Le débit se partage entre les boucles ; chaque retour garde son plancher de 0,2 m/s.
+    const choix = plusPetit(Math.max(qPertes / nb, CUIVRE[iRet].q02));
+    const tube = CUIVRE[choix.i];
+    const qParBoucle = Math.max(qPertes / nb, tube.q02);
+    const qTotal = qParBoucle * nb;
+    const coll = plusPetit(qTotal);
+    res = {
+      maintien, archi, kArchi, classe, deAller, chute, La, Lr, dT, nb,
+      pAller, pRetour, pertes, qPertes,
+      tube, qParBoucle, qRetenu: qTotal,
+      qMin: tube.q02 * nb,                          // plancher total imposé par les 0,2 m/s
+      vitesse: 0.2 * qParBoucle / tube.q02,
+      collecteur: CUIVRE[coll.i],
+      vitesseColl: 0.2 * qTotal / CUIVRE[coll.i].q02,
+      depasse: choix.depasse, depasseColl: coll.depasse,
+      forceParBoucles: qTotal > qPertes * 1.001     // le plancher de vitesse impose plus que les pertes
+    };
+    if (choix.i === iRet) break;
+    iRet = choix.i;
   }
   return res;
 }
@@ -820,7 +934,9 @@ function calcLogement(s, bcl) {
   if (n <= 10) r.avert.push("Moins de 11 logements : formules COSTIC hors domaine de validité (n > 10), résultats indicatifs.");
   if (ns <= 20) r.avert.push("Pointes 2 h et plus valables au-delà de 20 logements standards.");
 
-  const pBoucle = (bcl && !bcl.erreur && s.bclRech && s.mode !== "accumulation") ? bcl.pertes / 1000 : 0;
+  // Seul un réseau bouclé est réchauffé par la production : un traçage est électrique et
+  // indépendant, une distribution sans maintien n'a rien à compenser.
+  const pBoucle = (bcl && !bcl.erreur && bcl.maintien === "boucle" && s.bclRech && s.mode !== "accumulation") ? bcl.pertes / 1000 : 0;
   r.pBoucleRech = pBoucle;
   r.mode = s.mode;
 
@@ -1300,14 +1416,22 @@ function rendreFormulaire() {
   sel.value = sc.usage;
   const zu = $("zoneChampsUsage");
   zu.innerHTML = "";
-  for (const ch of USAGES[sc.usage].champs) zu.appendChild(creerChamp(sc, ch, sc.usage + "." + ch.id));
+  // Un champ porteur d'un prédicat "si" n'est rendu que s'il a un sens dans la configuration
+  // courante : il garde sa valeur, il n'est simplement pas affiché.
+  for (const ch of USAGES[sc.usage].champs) {
+    if (ch.si && !ch.si(sc)) continue;
+    zu.appendChild(creerChamp(sc, ch, sc.usage + "." + ch.id));
+  }
   const zh = $("zoneHypotheses");
   zh.innerHTML = "";
   if (sc.usage !== "logement") zh.appendChild(creerChamp(sc, CHAMP_MODE_TERT, CHAMP_MODE_TERT.id));
   for (const ch of HYPOTHESES) zh.appendChild(creerChamp(sc, ch, ch.id));
   const zb = $("zoneBouclage");
   zb.innerHTML = "";
-  for (const ch of CHAMPS_BOUCLAGE) zb.appendChild(creerChamp(sc, ch, ch.id));
+  for (const ch of CHAMPS_BOUCLAGE) {
+    if (ch.si && !ch.si(sc)) continue;
+    zb.appendChild(creerChamp(sc, ch, ch.id));
+  }
   const zv = $("zoneVerif");
   zv.innerHTML = "";
   for (const ch of CHAMPS_VERIF) zv.appendChild(creerChamp(sc, ch, ch.id));
@@ -1419,22 +1543,50 @@ function rendreResultats() {
   }
 
   // ---- Bouclage ----
-  h += '<h3>' + ico("boucle", 13) + 'Bouclage</h3>';
+  h += '<h3>' + ico("boucle", 13) + 'Maintien en température</h3>';
   if (!r.bcl) {
     h += '<div class="notice">Non calculé (longueur aller nulle).</div>';
+  } else if (r.bcl.maintien === "sans") {
+    h += '<div class="live">' + ico("info", 16) + '<span>Distribution <b>sans maintien en température</b> : aucun retour, aucun traçage, donc aucune puissance de compensation. Admissible uniquement si le volume entre la production et le point de puisage le plus éloigné reste inférieur ou égal à <b>3 litres</b> (arrêté du 30/11/2005) et si les antennes ne dépassent pas <b>8 m</b> (NF DTU 60.11 P1-2). Au-delà, un bouclage ou un traçage devient nécessaire.</span></div>';
   } else if (r.bcl.erreur) {
     h += '<div class="regwarn">' + ico("attention", 17) + ech(r.bcl.erreur) + '</div>';
-  } else {
+  } else if (r.bcl.maintien === "tracage") {
     const b = r.bcl;
     h += '<div class="synth">';
-    h += carte(m3(b.qRetenu) + " <small>m³/h</small>", "Débit de bouclage retenu");
-    h += carte(fmt(b.pertes) + " <small>W</small>", "Pertes du réseau bouclé (" + fmt(b.pAller) + " W aller + " + fmt(b.pRetour) + " W retour)");
-    h += carte("Cuivre " + b.tube.di + "/" + b.tube.de, "Retour de bouclage indicatif (v = " + fmt(b.vitesse, 2) + " m/s)");
+    h += carte(fmt(b.pertes / 1000, 2) + " <small>kW</small>", "Puissance de traçage à installer");
+    h += carte(fmt(b.wParM, 1) + " <small>W/m</small>", "Puissance linéique du cordon");
+    h += carte("Aucun", "Retour de bouclage (supprimé par le traçage)");
     h += '</div>';
-    h += '<div class="notice">Débit issu des pertes : ' + m3(b.qPertes) + ' m³/h (Q = P / (1,16 x ' + b.chute + ' K), [B1]) ; débit plancher à 0,2 m/s dans le retour retenu : ' + m3(b.qMin) + ' m³/h (NF DTU 60.11). Pertes calculées en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour sur ' + fmt(b.Lr) + ' m.</div>';
-    h += '<div class="live">' + ico("info", 16) + '<span>Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102).' +
-      (s.bMat === "cuivre" ? " Retour cuivre : vitesse conseillée 0,3 m/s maxi en permanent (corrosion-érosion) [B1]." : "") + '</span></div>';
-    if (b.depasse) h += '<div class="regwarn">' + ico("attention", 17) + 'Débit supérieur à la capacité du plus gros diamètre de la table : fractionner en plusieurs boucles.</div>';
+    h += '<div class="notice">Un seul tube maintenu en température, sur ' + fmt(b.La) + ' m : pas de canalisation de retour, donc pas de débit ni de circulateur, et des pertes environ deux fois plus faibles qu\'un réseau bouclé de même tracé. Calcul en classe ' + b.classe + ' (k maxi NF EN 12828), De ' + b.deAller + ', distribution à ' + fmt(s.tsto) + ' °C dans une ambiance à ' + fmt(s.bTamb) + ' °C.</div>';
+    if (b.wParM > 12 || b.wParM < 4) {
+      h += '<div class="regwarn">' + ico("attention", 17) + 'Puissance linéique de ' + fmt(b.wParM, 1) + ' W/m, éloignée de l\'ordre de grandeur usuel d\'environ 7 W/m avec un calorifuge correct (Energie+) : vérifier le diamètre, la classe d\'isolation et la température ambiante saisis.</div>';
+    }
+    h += '<div class="live">' + ico("info", 16) + '<span>Le traçage supprime la circulation en période de non-puisage, et une panne de cordon passe facilement inaperçue : <b>risque légionelles accru</b>. À réserver aux distributions à puisages réguliers, avec suivi du bon fonctionnement. Cette puissance est électrique et indépendante de la production ECS.</span></div>';
+  } else {
+    const b = r.bcl;
+    const mat = MATERIAUX[s.bMat] || MATERIAUX.cuivre;
+    h += '<div class="synth">';
+    h += carte(m3(b.qRetenu) + " <small>m³/h</small>", "Débit de bouclage total" + (b.nb > 1 ? " (" + m3(b.qParBoucle) + " m³/h par boucle)" : ""));
+    h += carte(fmt(b.pertes) + " <small>W</small>", "Pertes du réseau bouclé (" + fmt(b.pAller) + " W aller + " + fmt(b.pRetour) + " W retour)");
+    h += carte(ech(mat.label) + " " + b.tube.di + "/" + b.tube.de, "Retour d'une boucle (v = " + fmt(b.vitesse, 2) + " m/s)");
+    if (b.nb > 1) h += carte(ech(mat.label) + " " + b.collecteur.di + "/" + b.collecteur.de, "Collecteur de retour (v = " + fmt(b.vitesseColl, 2) + " m/s)");
+    h += '</div>';
+    h += '<div class="notice">Débit issu des pertes : ' + m3(b.qPertes) + ' m³/h (Q = P / (1,16 x ' + b.chute + ' K), [B1])' +
+      (b.nb > 1 ? ', réparti sur ' + fmt(b.nb) + ' boucles' : '') +
+      ' ; plancher à 0,2 m/s dans les retours : ' + m3(b.qMin) + ' m³/h (NF DTU 60.11). Pertes en classe ' + b.classe + ' (k maxi NF EN 12828), boucle à ' + fmt(s.tsto - b.chute / 2, 1) + ' °C en moyenne dans une ambiance à ' + fmt(s.bTamb) + ' °C, aller De ' + b.deAller + ' sur ' + fmt(b.La) + ' m, retour sur ' + fmt(b.Lr) + ' m' +
+      (b.kArchi !== 1 ? '. Architecture ' + ech(ARCHI_BOUCLAGE[b.archi].label) + ' : pertes corrigées de ' + fmt((b.kArchi - 1) * 100, 0) + ' % ([B1] fig. 15)' : '') + '.</div>';
+    h += '<div class="live">' + ico("info", 16) + '<span>Puissance de compensation des pertes : <b>' + fmt(b.pertes / 1000, 2) + ' kW</b> (réchauffeur de boucle dédié = pertes maximales [B1] p. 102). ' + ech(mat.note) + '</span></div>';
+    if (b.depasse) {
+      h += '<div class="regwarn">' + ico("attention", 17) + 'Le débit d\'une boucle dépasse le plus gros diamètre de la table, même à la vitesse maximale : <b>augmenter le nombre de boucles</b> ou réduire la longueur du réseau.</div>';
+    } else if (b.tube.de >= 42) {
+      h += '<div class="regwarn">' + ico("attention", 17) + 'Retour de boucle en ' + b.tube.di + '/' + b.tube.de + ', diamètre inhabituel pour un retour de bouclage. Un réseau réel de cette ampleur se découpe en plusieurs boucles, chacune avec son propre retour de petit diamètre raccordé sur un collecteur : augmenter le nombre de boucles.</div>';
+    }
+    if (b.forceParBoucles) {
+      h += '<div class="regwarn">' + ico("attention", 17) + 'Avec ' + fmt(b.nb) + ' boucles, le plancher de 0,2 m/s impose ' + m3(b.qRetenu) + ' m³/h alors que les pertes n\'en demandent que ' + m3(b.qPertes) + ' m³/h. C\'est le multibouclage que [B1] proscrit : réduire le nombre de boucles.</div>';
+    }
+    if (b.depasseColl) {
+      h += '<div class="regwarn">' + ico("attention", 17) + 'Le collecteur de retour dépasse le plus gros diamètre de la table : prévoir plusieurs productions ou des sous-stations ([B1] p. 16).</div>';
+    }
   }
 
   // ---- Vérification existant ----
@@ -1560,15 +1712,28 @@ function syntheseTexte() {
     L.push("- Méthode du bilan de pointe, efficacité stockage " + fmtEff(s.coefR) + ", fenêtre de recharge " + fmt(r.tr, 1) + " h, stockage " + s.tsto + " °C, eau froide " + s.tef + " °C");
   }
   L.push("");
-  L.push("BOUCLAGE");
-  if (r.bcl && !r.bcl.erreur) {
-    const b = r.bcl;
-    L.push("- Pertes du réseau bouclé : " + fmt(b.pertes) + " W (" + fmt(b.pAller) + " aller + " + fmt(b.pRetour) + " retour), classe " + b.classe + ", ambiance " + fmt(s.bTamb) + " °C");
-    L.push("- Débit de bouclage : " + m3(b.qRetenu) + " m³/h (chute " + b.chute + " K ; plancher 0,2 m/s : " + m3(b.qMin) + " m³/h)");
-    L.push("- Retour indicatif : cuivre " + b.tube.di + "/" + b.tube.de + " (v = " + fmt(b.vitesse, 2) + " m/s)");
-    L.push("- Puissance de compensation : " + fmt(b.pertes / 1000, 2) + " kW");
-  } else {
+  L.push("MAINTIEN EN TEMPERATURE");
+  if (!r.bcl) {
     L.push("- Non calculé");
+  } else if (r.bcl.maintien === "sans") {
+    L.push("- Sans maintien en température : ni retour ni traçage, aucune puissance de compensation");
+    L.push("- Admissible seulement si antenne inférieure ou égale à 3 L (arrêté du 30/11/2005) et à 8 m (NF DTU 60.11)");
+  } else if (r.bcl.erreur) {
+    L.push("- Non calculé : " + r.bcl.erreur);
+  } else if (r.bcl.maintien === "tracage") {
+    const b = r.bcl;
+    L.push("- Traçage électrique, sans canalisation de retour ni circulateur");
+    L.push("- Puissance de traçage : " + fmt(b.pertes / 1000, 2) + " kW, soit " + fmt(b.wParM, 1) + " W/m sur " + fmt(b.La) + " m (classe " + b.classe + ", ambiance " + fmt(s.bTamb) + " °C)");
+    L.push("- Puissance électrique, indépendante de la production ECS. Risque légionelles accru faute de circulation");
+  } else {
+    const b = r.bcl;
+    const mat = MATERIAUX[s.bMat] || MATERIAUX.cuivre;
+    L.push("- Réseau bouclé, architecture : " + ARCHI_BOUCLAGE[b.archi].label + (b.kArchi !== 1 ? " (pertes corrigées de " + fmt((b.kArchi - 1) * 100, 0) + " %)" : ""));
+    L.push("- Pertes du réseau bouclé : " + fmt(b.pertes) + " W (" + fmt(b.pAller) + " aller + " + fmt(b.pRetour) + " retour), classe " + b.classe + ", ambiance " + fmt(s.bTamb) + " °C");
+    L.push("- Débit de bouclage total : " + m3(b.qRetenu) + " m³/h sur " + fmt(b.nb) + " boucle(s) (chute " + b.chute + " K ; plancher 0,2 m/s : " + m3(b.qMin) + " m³/h)");
+    L.push("- Retour d'une boucle : " + mat.label + " " + b.tube.di + "/" + b.tube.de + " pour " + m3(b.qParBoucle) + " m³/h (v = " + fmt(b.vitesse, 2) + " m/s)");
+    if (b.nb > 1) L.push("- Collecteur de retour : " + mat.label + " " + b.collecteur.di + "/" + b.collecteur.de + " (v = " + fmt(b.vitesseColl, 2) + " m/s)");
+    L.push("- Puissance de compensation : " + fmt(b.pertes / 1000, 2) + " kW");
   }
   L.push("");
   L.push("Méthodes : COSTIC/ADEME 2016-2019-2021, arrêté du 30/11/2005, NF DTU 60.11. Valeurs par défaut sourcées, modifiées le cas échéant (voir docs/methodes.md). Pré-dimensionnement à valider par étude détaillée.");
@@ -1671,7 +1836,7 @@ const APP = {
   nom: "Calculette ECS et Bouclage",
   // Suffixe "+dev" tant que le travail n'est pas fusionné dans main : le panneau dit
   // ainsi clairement si l'on regarde la version publiée ou une version en cours.
-  version: "v2",
+  version: "v3",
   maj: "2026-08-28",
   methode: "COSTIC/ADEME en habitat, bilan de pointe en tertiaire",
   icones: "Lucide, licence ISC"

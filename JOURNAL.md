@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-08-28 (v3 : modes de maintien en température)
+- Deux défauts corrigés, signalés par l'utilisateur qui trouvait un retour de bouclage en cuivre 52/54 trop épais sur un hôtel. Le premier : le résultat affichait "Cuivre" quel que soit le matériau choisi. Il affiche désormais le matériau réellement retenu, et précise que le diamètre reste un équivalent cuivre, la table de débits de [B1] fig. 45 étant la seule publiée. Le second : rien n'alertait quand un réseau long produisait un diamètre de retour aberrant.
+- Diagnostic du cas signalé : 1 500 m de réseau modélisés en une seule boucle donnaient 20,9 kW de pertes, soit 1,7 fois l'énergie ECS réellement puisée, et un débit de 3,6 m³/h dans un retour unique. L'arithmétique était juste, le modèle ne l'était pas.
+- Nouveau : le nombre de boucles. Le débit total se répartit entre les boucles, chaque retour est dimensionné pour sa part et le collecteur pour le total, conformément aux définitions du NF DTU 60.11 reprises par [B1] fig. 1. Le même réseau en 5 boucles donne des retours en 26/28 au lieu d'un 52/54. Trois alertes ont été ajoutées : retour de diamètre inhabituel, dépassement de la table, et multibouclage quand le plancher de 0,2 m/s impose un débit supérieur à celui qu'exigent les pertes, effet que [B1] p. 16 décrit et proscrit.
+- Nouveau : le mode de maintien en température, l'utilisateur ayant justement remarqué que le couple aller plus retour ne vaut que pour un type de réseau. Vérification faite, il a raison. Trois modes : réseau bouclé, traçage électrique par ruban chauffant (ni retour ni circulateur, pertes de moitié, environ 7 W/m selon Energie+, risque légionelles accru selon Batirama), et distribution sans maintien (admise sous 3 L et 8 m d'antenne). Les champs sans objet disparaissent selon le mode, et seul le réseau bouclé alimente la surpuissance de production.
+- Contrôle indépendant du modèle de traçage : sur le réseau de l'utilisateur il sort 6,9 W/m, contre environ 7 W/m publiés. Une alerte se déclenche hors de la plage 4 à 12 W/m.
+- Nouveau : l'architecture du bouclage, avec les sept configurations comparées par [B1] fig. 15 et leurs écarts de pertes publiés (de -17 % pour la première colonne commune à +5 % pour l'horizontale). Le coefficient ne s'applique qu'en avant-projet : la valeur par défaut, colonnes montantes, ne corrige rien.
+- Vérification : 63 combinaisons (7 usages x modes de production x 3 modes de maintien) sans erreur ni valeur invalide, tous les boutons d'aide ouverts, et visibilité des champs contrôlée pour les trois modes.
+- Fusionné dans `main` et étiqueté `v3`.
+
 ## 2026-08-28 (v2 : aides derrière un bouton (i))
 - Les aides sous les champs (sources, ratios, mises en garde) noyaient le formulaire. Elles passent derrière un bouton (i) placé à droite de chaque intitulé, qui ouvre un panneau flottant avec le titre du champ et le texte. Le formulaire tient désormais sur une fraction de la hauteur précédente.
 - Choix technique : API Popover native plutôt qu'un positionnement maison. Le panneau est rendu dans le calque supérieur, donc jamais rogné par la colonne de résultats qui a son propre défilement, et le navigateur fournit la fermeture par clic extérieur et par Échap. Repli par classe si l'API manque.
