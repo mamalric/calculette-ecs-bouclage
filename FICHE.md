@@ -2,15 +2,17 @@
 id: 2026-08-28-calculette-ecs-et-bouclage     # AAAA-MM-JJ-slug, écrit une fois, jamais modifié (même si le dossier bouge)
 nom: Calculette ECS et Bouclage               # nom affiché
 type: application                             # application | outil | documentation | travail | affaire
-statut: actif                                 # idee | actif | pause | termine | abandonne
+statut: termine                               # idee | actif | pause | termine | abandonne
 pitch: Calculette web pour estimer le stockage ECS et dimensionner le bouclage d'un bâtiment selon son usage.  # une phrase sur une seule ligne, 120 caractères maximum
 cree: 2026-08-28                              # AAAA-MM-JJ
-maj: 2026-08-29                               # AAAA-MM-JJ, mis à jour par Claude Code en fin de session
+maj: 2026-11-17                               # AAAA-MM-JJ, mis à jour par Claude Code en fin de session
 tags: [cvc, plomberie, ecs, bouclage, calculette]  # exemple : [cvc, reglementation]
 stack: HTML + CSS + JS vanilla, une seule page, sans build
-lancer: ouvrir index.html, ou https://mamalric.github.io/calculette-ecs-bouclage/
+lancer: ouvrir index.html
 depot: https://github.com/mamalric/calculette-ecs-bouclage
+site: https://mamalric.github.io/calculette-ecs-bouclage/
 ---
+
 
 # Calculette ECS et Bouclage
 

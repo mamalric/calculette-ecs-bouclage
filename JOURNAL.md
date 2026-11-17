@@ -2,6 +2,16 @@
 
 <!-- Dernière entrée en haut. Une entrée par session de travail ou par décision. Date au format AAAA-MM-JJ. -->
 
+## 2026-11-17, thème clair par défaut
+- Demande de Marius pour toutes les calculettes B27 : la page s'ouvre en thème clair, le réglage sombre du système n'est plus suivi ; le bouton de bascule reste, et le choix qu'il mémorise dans le navigateur est gardé.
+- Script du <head> (thème appliqué avant le premier rendu) et initTheme modifiés : plus de lecture de prefers-color-scheme ni d'écoute de son changement.
+- Vérifié dans le navigateur avec un système réglé en sombre : page en clair, bascule et mémorisation du choix, console vide.
+
+## 2026-09-09
+- Fiche modifiée depuis le gestionnaire : lancer.
+- Fiche modifiée depuis le gestionnaire : site.
+- Fiche modifiée depuis le gestionnaire : statut (statut : actif vers termine).
+
 ## 2026-08-29 (mise en ligne de la v24)
 
 - Enregistrement et ouverture de projet confirmés par l'utilisateur sur son propre navigateur : le téléchargement se déclenche et le fichier produit se relit. C'était le seul point que le bac à sable ne permettait pas de vérifier.
